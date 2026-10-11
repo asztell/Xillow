@@ -1,12 +1,12 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createPool } from "./db";
+import { createDb, createPool } from "./db";
 
 /**
  * Seeds the `listings` table from sample_listings.json.
  *
- * Idempotent: the table is upserted on the composite key (id, source), so the
+ * Idempotent: rows are upserted on the composite key (id, source), so the
  * script can be re-run safely. It also applies schema.sql first so it works
  * even without the Docker init hook.
  */
@@ -34,33 +34,8 @@ const projectRoot = join(__dirname, "..");
 
 /** Normalizes an ISO date ("2026-08-29") to a UTC timestamp. */
 function toTimestamp(value: string): string {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? `${value}T00:00:00.000Z`
-    : value;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00.000Z` : value;
 }
-
-const UPSERT_SQL = `
-  INSERT INTO listings (
-    id, source, address, city, state, zip, price, bedrooms, bathrooms, sqft,
-    latitude, longitude, listed_date, status, description
-  ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-  )
-  ON CONFLICT (id, source) DO UPDATE SET
-    address     = EXCLUDED.address,
-    city        = EXCLUDED.city,
-    state       = EXCLUDED.state,
-    zip         = EXCLUDED.zip,
-    price       = EXCLUDED.price,
-    bedrooms    = EXCLUDED.bedrooms,
-    bathrooms   = EXCLUDED.bathrooms,
-    sqft        = EXCLUDED.sqft,
-    latitude    = EXCLUDED.latitude,
-    longitude   = EXCLUDED.longitude,
-    listed_date = EXCLUDED.listed_date,
-    status      = EXCLUDED.status,
-    description = EXCLUDED.description
-`;
 
 async function main(): Promise<void> {
   const listings: SampleListing[] = JSON.parse(
@@ -69,40 +44,58 @@ async function main(): Promise<void> {
   const schemaSql = readFileSync(join(projectRoot, "schema.sql"), "utf8");
 
   const pool = createPool();
-  const client = await pool.connect();
+  const db = createDb(pool);
 
   try {
-    await client.query(schemaSql);
-    await client.query("BEGIN");
+    // schema.sql is a multi-statement DDL script, so it runs through the raw
+    // pool rather than the query builder.
+    await pool.query(schemaSql);
 
-    for (const listing of listings) {
-      await client.query(UPSERT_SQL, [
-        listing.id,
-        listing.source,
-        listing.address,
-        listing.city,
-        listing.state,
-        listing.zip,
-        listing.price,
-        listing.bedrooms,
-        listing.bathrooms,
-        listing.sqft,
-        listing.latitude,
-        listing.longitude,
-        toTimestamp(listing.listedDate),
-        listing.status,
-        listing.description,
-      ]);
-    }
+    await db.transaction().execute(async (trx) => {
+      for (const listing of listings) {
+        await trx
+          .insertInto("listings")
+          .values({
+            id: listing.id,
+            source: listing.source,
+            address: listing.address,
+            city: listing.city,
+            state: listing.state,
+            zip: listing.zip,
+            price: listing.price,
+            bedrooms: listing.bedrooms,
+            bathrooms: listing.bathrooms,
+            sqft: listing.sqft,
+            latitude: listing.latitude,
+            longitude: listing.longitude,
+            listed_date: new Date(toTimestamp(listing.listedDate)),
+            status: listing.status,
+            description: listing.description,
+          })
+          .onConflict((oc) =>
+            oc.columns(["id", "source"]).doUpdateSet((eb) => ({
+              address: eb.ref("excluded.address"),
+              city: eb.ref("excluded.city"),
+              state: eb.ref("excluded.state"),
+              zip: eb.ref("excluded.zip"),
+              price: eb.ref("excluded.price"),
+              bedrooms: eb.ref("excluded.bedrooms"),
+              bathrooms: eb.ref("excluded.bathrooms"),
+              sqft: eb.ref("excluded.sqft"),
+              latitude: eb.ref("excluded.latitude"),
+              longitude: eb.ref("excluded.longitude"),
+              listed_date: eb.ref("excluded.listed_date"),
+              status: eb.ref("excluded.status"),
+              description: eb.ref("excluded.description"),
+            })),
+          )
+          .execute();
+      }
+    });
 
-    await client.query("COMMIT");
     console.log(`Seeded ${listings.length} listings.`);
-  } catch (err) {
-    await client.query("ROLLBACK").catch(() => undefined);
-    throw err;
   } finally {
-    client.release();
-    await pool.end();
+    await db.destroy();
   }
 }
 

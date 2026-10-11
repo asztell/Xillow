@@ -10,7 +10,7 @@ feeds. It filters, ranks by relevance, and paginates results.
 
 - **Node.js + TypeScript** (Express 5)
 - **PostgreSQL 18** via Docker Compose
-- **`pg`** for data access
+- **`pg`** driver + **Kysely** as the type-safe query builder
 - **Vitest** + **Supertest** for tests
 
 ## Prerequisites
@@ -127,6 +127,12 @@ Columns mirror `sample_listings.json`. `id` is only unique **within** a source
 **`(id, source)`**. `listedDate` is stored as `TIMESTAMPTZ` (ISO date strings are
 loaded as UTC midnight).
 
+Queries are built with **Kysely** (`KyselyListingRepository`), which wraps the
+`pg` pool via `PostgresDialect`. The table/column types are declared in
+`src/db.ts`, and `schema.sql` remains the source of truth for the DDL. NUMERIC
+columns (`price`, `bathrooms`) are cast to `float8` in the select so the API
+returns numbers rather than pg's default NUMERIC-as-string.
+
 ## Relevance scoring
 
 Results are ranked by a weighted blend of two signals (implemented in
@@ -174,6 +180,10 @@ deterministic order** so that pagination never duplicates or skips rows.
   equality. The downside is fuzzier matching (e.g. `keyword=pets` also matches
   "no pets"); a stemming/full-text index would be the next step.
 - **`pageSize` capped at 100** to bound response size.
+- **Kysely for the query layer, not the DDL.** Kysely gives compile-time-checked
+  queries and inferred result types while keeping `schema.sql` as the readable
+  source of truth — so there is no ORM migration tooling to adopt. The trade-off
+  is a small amount of raw `sql` for the `::float8` casts.
 - **"No matches" is a `200` with an empty `results` array**, not an error — an
   empty result is a valid outcome, whereas malformed input is a `400`.
 
@@ -196,11 +206,11 @@ npm test
 src/
   index.ts                     server bootstrap
   app.ts                       Express app factory (takes a repository)
-  db.ts                        Postgres pool factory
+  db.ts                        Postgres pool + Kysely instance + table types
   seed.ts                      schema + seed from sample_listings.json
   types.ts                     shared domain types
   routes/listings.ts           GET /listings
-  repositories/listingRepository.ts   ListingRepository interface + pg impl
+  repositories/listingRepository.ts   ListingRepository interface + Kysely impl
   lib/validation.ts            query parsing/validation (pure)
   lib/scoring.ts               relevance scoring (pure)
   lib/search.ts                filter -> rank -> paginate orchestration
