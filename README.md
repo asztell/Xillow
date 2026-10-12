@@ -19,35 +19,18 @@ from multiple MLS feeds. It filters, ranks by relevance, and paginates results.
 
 ## Prerequisites
 
-- Node.js 20+
-- Docker (with Compose)
+- **Docker with Compose** — all that's needed for the Docker quickstart below.
+- **Node.js 20+** — for running the apps locally (Option 2).
 
 ## Setup
 
-```bash
-npm install                 # installs all workspaces from the root
-cp .env.example .env        # adjust if needed
+### Option 1 — Everything in Docker (recommended)
 
-docker compose up -d db     # starts just Postgres 18 on host port 5433
-npm run seed                # creates the table and loads sample_listings.json
-npm run dev                 # API on http://localhost:3000 + UI on http://localhost:5173
-```
-
-Then open **http://localhost:5173**. The UI calls the API through a Vite dev
-proxy (`/api/*` → `http://localhost:3000`), so there is no CORS configuration to
-manage in development.
-
-The database listens on **host port 5433** (not the default 5432) so it won't
-clash with an existing local Postgres. Change the mapping in `compose.yml` and
-`DATABASE_URL` in `.env` if you prefer another port.
-
-### Run everything in Docker
-
-One command builds and runs the database, API, and UI together — nothing else
-needed on the host except Docker:
+One command builds and runs the database, API, and UI together — nothing else is
+needed on the host except Docker (no `npm install`, no `.env`):
 
 ```bash
-npm run docker:up      # docker compose up --build (foreground; logs streamed)
+docker compose up --build          # or the alias: npm run docker:up
 ```
 
 Then open **http://localhost:8080**.
@@ -84,6 +67,25 @@ npm run docker:logs    # follow logs
 
 Images are built from multi-stage `Dockerfile`s (`apps/api`, `apps/web`) with a
 root `.dockerignore`; the API runtime image runs as the non-root `node` user.
+
+### Option 2 — Run the apps locally (development)
+
+```bash
+npm install                 # installs all workspaces from the root
+cp .env.example .env        # adjust if needed
+
+docker compose up -d db     # starts just Postgres 18 on host port 5433
+npm run seed                # creates the table and loads sample_listings.json
+npm run dev                 # API on http://localhost:3000 + UI on http://localhost:5173
+```
+
+Then open **http://localhost:5173**. The UI calls the API through a Vite dev
+proxy (`/api/*` → `http://localhost:3000`), so there is no CORS configuration to
+manage in development.
+
+The database listens on **host port 5433** (not the default 5432) so it won't
+clash with an existing local Postgres. Change the mapping in `compose.yml` and
+`DATABASE_URL` in `.env` if you prefer another port.
 
 ### Scripts
 
