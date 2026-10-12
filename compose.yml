@@ -6,8 +6,13 @@
 # Internal traffic uses service names on the compose network; only the published
 # ports below are reachable from the host:
 #   web -> http://localhost:8080
-#   api -> http://localhost:3000
+#   api -> http://localhost:3001
 #   db  -> localhost:5433
+#
+# Host ports default to the values above but can be overridden via the
+# API_HOST_PORT / WEB_HOST_PORT / DB_HOST_PORT env vars (e.g. in .env). The API
+# default (3001) deliberately differs from the manual `npm run dev` API (3000)
+# so both can run at the same time against the shared database on 5433.
 
 services:
   db:
@@ -20,7 +25,8 @@ services:
       POSTGRES_DB: xillow
     ports:
       # Host 5433 to avoid clashing with any existing local Postgres on 5432.
-      - "5433:5432"
+      # Shared by the Docker stack and manual `npm run dev`.
+      - "${DB_HOST_PORT:-5433}:5432"
     volumes:
       # Postgres 18 moved the data volume from /var/lib/postgresql/data to
       # /var/lib/postgresql (PGDATA is now /var/lib/postgresql/18/docker).
@@ -62,7 +68,8 @@ services:
       DATABASE_URL: *database-url
       PORT: "3000"
     ports:
-      - "3000:3000"
+      # Host 3001 (not 3000) so `npm run dev` can run concurrently.
+      - "${API_HOST_PORT:-3001}:3000"
     depends_on:
       seed:
         condition: service_completed_successfully
@@ -87,7 +94,7 @@ services:
     container_name: xillow-web
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${WEB_HOST_PORT:-8080}:80"
     depends_on:
       api:
         condition: service_healthy

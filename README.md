@@ -28,7 +28,7 @@ from multiple MLS feeds. It filters, ranks by relevance, and paginates results.
 npm install                 # installs all workspaces from the root
 cp .env.example .env        # adjust if needed
 
-docker compose up -d        # starts Postgres 18 on host port 5433
+docker compose up -d db     # starts just Postgres 18 on host port 5433
 npm run seed                # creates the table and loads sample_listings.json
 npm run dev                 # API on http://localhost:3000 + UI on http://localhost:5173
 ```
@@ -55,13 +55,26 @@ Then open **http://localhost:8080**.
 | Service | URL / port               | Notes                                        |
 | ------- | ------------------------ | -------------------------------------------- |
 | `web`   | http://localhost:8080    | nginx serving the built UI                   |
-| `api`   | http://localhost:3000    | Express API (health: `/api/health`)          |
+| `api`   | http://localhost:3001    | Express API (health: `/api/health`)          |
 | `db`    | localhost:5433           | PostgreSQL 18                                |
+
+Host ports are overridable via `API_HOST_PORT`, `WEB_HOST_PORT`, and
+`DB_HOST_PORT` (see `.env.example`). The API's host port is **3001**, not 3000,
+so this stack and the manual `npm run dev` server can run **at the same time**:
+
+| | Manual (`npm run dev`) | Docker (`npm run docker:up`) |
+| --- | --- | --- |
+| API | 3000 | 3001 |
+| UI | 5173 | 8080 |
+| DB | 5433 | 5433 (shared) |
+
+Both modes point at the same Postgres on 5433, so they see identical data; the
+Docker `seed` job re-runs on each `up` but is idempotent.
 
 Compose starts in dependency order: `db` (healthy) → `seed` (one-shot; applies
 the schema and loads the sample data, then exits) → `api` (healthy) → `web`. The
-UI calls same-origin `/api/*`, which nginx reverse-proxies to the `api` service,
-so there is no CORS setup in production either.
+UI calls same-origin `/api/*`, which nginx reverse-proxies to the `api` service
+(container port 3000), so there is no CORS setup in production either.
 
 ```bash
 npm run docker:down    # stop the stack
