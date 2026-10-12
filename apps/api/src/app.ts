@@ -11,11 +11,11 @@ export function createApp(repo: ListingRepository): Express {
 
   app.use(express.json());
 
-  app.get("/health", (_req, res) => {
+  app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
-  app.use("/listings", createListingsRouter(repo));
+  app.use("/api/listings", createListingsRouter(repo));
 
   return app;
 }

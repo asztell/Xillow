@@ -15,7 +15,7 @@ services:
       # /var/lib/postgresql (PGDATA is now /var/lib/postgresql/18/docker).
       - pgdata:/var/lib/postgresql
       # Runs once, on first initialisation of an empty data directory.
-      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./apps/api/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U xillow -d xillow"]
       interval: 5s

@@ -1,5 +1,10 @@
 /**
- * Shared domain types for the Listing Search Service.
+ * Shared domain + API contract types.
+ *
+ * This is the single source of truth for the shapes that cross the API/UI
+ * boundary. It is intentionally type-only (no runtime values) so that both the
+ * Node API and the Vite UI can consume it as raw TypeScript source without a
+ * build step or inter-package runtime coupling.
  */
 
 export type ListingStatus = "active" | "pending" | "sold";
@@ -41,7 +46,7 @@ export interface SearchParams {
   pageSize: number;
 }
 
-/** Paginated response body for `GET /listings`. */
+/** Paginated response body for `GET /api/listings`. */
 export interface SearchResult {
   page: number;
   pageSize: number;

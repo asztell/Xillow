@@ -82,12 +82,12 @@ function sampleListings(): Listing[] {
   ];
 }
 
-describe("GET /listings", () => {
+describe("GET /api/listings", () => {
   it("returns a paginated, ranked result set", async () => {
     const repo = new FakeListingRepository(sampleListings());
     const app = createApp(repo);
 
-    const res = await request(app).get("/listings").query({ targetBudget: 450000 });
+    const res = await request(app).get("/api/listings").query({ targetBudget: 450000 });
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ page: 1, pageSize: 10, total: 4, totalPages: 1, hasNext: false, hasPrev: false });
@@ -109,7 +109,7 @@ describe("GET /listings", () => {
     const repo = new FakeListingRepository(sampleListings());
     const app = createApp(repo);
 
-    await request(app).get("/listings").query({
+    await request(app).get("/api/listings").query({
       minPrice: 400000,
       maxPrice: 500000,
       minBedrooms: 2,
@@ -128,7 +128,7 @@ describe("GET /listings", () => {
 
   it("filters by price range", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ minPrice: 400000, maxPrice: 460000 });
+    const res = await request(app).get("/api/listings").query({ minPrice: 400000, maxPrice: 460000 });
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(2);
     for (const listing of res.body.results) {
@@ -139,21 +139,21 @@ describe("GET /listings", () => {
 
   it("filters by city case-insensitively", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ city: "springfield" });
+    const res = await request(app).get("/api/listings").query({ city: "springfield" });
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(3);
   });
 
   it("filters by keyword against the description", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ keyword: "pets" });
+    const res = await request(app).get("/api/listings").query({ keyword: "pets" });
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(3);
   });
 
   it("filters by minimum bedrooms", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ minBedrooms: 3 });
+    const res = await request(app).get("/api/listings").query({ minBedrooms: 3 });
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(1);
     expect(res.body.results[0].bedrooms).toBe(3);
@@ -162,18 +162,18 @@ describe("GET /listings", () => {
   it("paginates and reports page boundaries", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
 
-    const first = await request(app).get("/listings").query({ page: 1, pageSize: 2 });
+    const first = await request(app).get("/api/listings").query({ page: 1, pageSize: 2 });
     expect(first.body).toMatchObject({ page: 1, pageSize: 2, total: 4, totalPages: 2, hasNext: true, hasPrev: false });
     expect(first.body.results).toHaveLength(2);
 
-    const second = await request(app).get("/listings").query({ page: 2, pageSize: 2 });
+    const second = await request(app).get("/api/listings").query({ page: 2, pageSize: 2 });
     expect(second.body).toMatchObject({ page: 2, pageSize: 2, total: 4, totalPages: 2, hasNext: false, hasPrev: true });
     expect(second.body.results).toHaveLength(2);
   });
 
   it("returns an empty page when paging past the end", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ page: 99, pageSize: 2 });
+    const res = await request(app).get("/api/listings").query({ page: 99, pageSize: 2 });
     expect(res.status).toBe(200);
     expect(res.body.results).toEqual([]);
     expect(res.body.total).toBe(4);
@@ -182,7 +182,7 @@ describe("GET /listings", () => {
 
   it("returns a clean empty result (not an error) when nothing matches", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ city: "Atlantis" });
+    const res = await request(app).get("/api/listings").query({ city: "Atlantis" });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ total: 0, totalPages: 0, hasNext: false, hasPrev: false });
     expect(res.body.results).toEqual([]);
@@ -190,7 +190,7 @@ describe("GET /listings", () => {
 
   it("rejects minPrice greater than maxPrice with 400", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ minPrice: 600000, maxPrice: 400000 });
+    const res = await request(app).get("/api/listings").query({ minPrice: 600000, maxPrice: 400000 });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("INVALID_QUERY");
     expect(res.body.error.field).toBe("minPrice");
@@ -198,21 +198,21 @@ describe("GET /listings", () => {
 
   it("rejects pageSize of zero with 400", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ pageSize: 0 });
+    const res = await request(app).get("/api/listings").query({ pageSize: 0 });
     expect(res.status).toBe(400);
     expect(res.body.error.field).toBe("pageSize");
   });
 
   it("rejects a non-numeric price with 400", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/listings").query({ minPrice: "lots" });
+    const res = await request(app).get("/api/listings").query({ minPrice: "lots" });
     expect(res.status).toBe(400);
     expect(res.body.error.field).toBe("minPrice");
   });
 
   it("returns 500 when the repository fails", async () => {
     const app = createApp(new ThrowingListingRepository());
-    const res = await request(app).get("/listings");
+    const res = await request(app).get("/api/listings");
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("INTERNAL_ERROR");
   });

@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./env";
 import { createApp } from "./app";
 import { createDb, createPool } from "./db";
 import { KyselyListingRepository } from "./repositories/listingRepository";

@@ -1,0 +1,47 @@
+import { Results } from "./components/Results";
+import { SearchForm } from "./components/SearchForm";
+import { useListings } from "./hooks/useListings";
+import { useListingQuery } from "./hooks/useListingQuery";
+import { filtersKey } from "./lib/query";
+
+export default function App() {
+  const [query, setQuery] = useListingQuery();
+  const listings = useListings(query);
+
+  const status = listings.isPending
+    ? "loading"
+    : listings.isError
+      ? "error"
+      : listings.data && listings.data.total > 0
+        ? "success"
+        : "empty";
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <h1>Xillow</h1>
+        <p className="app-tagline">
+          Search property listings across multiple MLS feeds.
+        </p>
+      </header>
+
+      {/* Remount when the applied filters change so the draft tracks the URL
+          (e.g. browser back/forward), without resetting on page changes. */}
+      <SearchForm
+        key={filtersKey(query)}
+        query={query}
+        onSubmit={setQuery}
+        disabled={listings.isFetching}
+      />
+
+      <Results
+        status={status}
+        data={listings.data}
+        error={listings.error}
+        isFetching={listings.isFetching}
+        onRetry={() => void listings.refetch()}
+        onPageChange={(page) => setQuery({ ...query, page })}
+      />
+    </div>
+  );
+}
