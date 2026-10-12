@@ -1,5 +1,5 @@
 import type { ScoredListing } from "@xillow/types";
-import { formatPrice, formatScore } from "../lib/format";
+import { formatFullAddress, formatPrice, formatScore } from "../lib/format";
 
 const DASH = "—";
 
@@ -22,8 +22,24 @@ export function ResultsTable({ listings }: { listings: ScoredListing[] }) {
         {listings.map((listing) => (
           <tr key={`${listing.source}:${listing.id}`}>
             <td>
-              {listing.address}
-              <span className="source-tag">{listing.source}</span>
+              <div className="address-line">
+                {listing.address}
+                <span className="source-tag">{listing.source}</span>
+              </div>
+              {listing.isPrimary && (
+                <span className="primary-tag">most recent</span>
+              )}
+              {listing.potentialDuplicates.length > 0 && (
+                <span className="duplicate-note">
+                  Possible duplicate of{" "}
+                  {listing.potentialDuplicates
+                    .map(
+                      (dup) =>
+                        `${formatFullAddress(dup)} (${dup.source} ${formatPrice(dup.price)})`,
+                    )
+                    .join("; ")}
+                </span>
+              )}
             </td>
             <td>
               {listing.city}, {listing.state}

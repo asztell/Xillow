@@ -7,6 +7,8 @@
 export type {
   ListingStatus,
   Listing,
+  DuplicateRef,
+  DuplicateAnnotation,
   ScoredListing,
   SearchParams,
   SearchResult,

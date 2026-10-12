@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -26,6 +26,9 @@ function listing(overrides: Partial<ScoredListing> = {}): ScoredListing {
     status: "active",
     description: "Bright condo near transit",
     score: 0.693,
+    duplicateGroupId: null,
+    potentialDuplicates: [],
+    isPrimary: false,
     ...overrides,
   };
 }
@@ -68,6 +71,55 @@ describe("App", () => {
     expect(within(row).getByText("$450,000")).toBeInTheDocument();
     expect(within(row).getByText("2")).toBeInTheDocument(); // bedrooms
     expect(within(row).getByText("0.693")).toBeInTheDocument(); // relevance score
+  });
+
+  it("flags a possible duplicate (with its full address) and labels the primary", async () => {
+    handleListings(() =>
+      page({
+        results: [
+          listing({
+            duplicateGroupId: "dup-01",
+            isPrimary: true,
+            potentialDuplicates: [
+              {
+                id: "B7",
+                source: "MLS_B",
+                address: "123 Main Street, Unit 4B",
+                city: "Springfield",
+                state: "VA",
+                zip: "22150",
+                price: 452000,
+                listedDate: "2026-08-27T00:00:00.000Z",
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+    renderApp();
+
+    const row = await screen.findByRole("row", { name: /123 Main St, Apt 4B/i });
+    expect(within(row).getByText(/possible duplicate/i)).toBeInTheDocument();
+    expect(
+      within(row).getByText(/123 Main Street, Unit 4B, Springfield, VA 22150/),
+    ).toBeInTheDocument();
+    expect(within(row).getByText(/MLS_B \$452,000/)).toBeInTheDocument();
+    expect(within(row).getByText(/most recent/i)).toBeInTheDocument();
+  });
+
+  it("toggles the theme between light and dark", async () => {
+    handleListings(() => page());
+    renderApp();
+
+    const toDark = await screen.findByRole("button", {
+      name: /switch to dark mode/i,
+    });
+    await userEvent.click(toDark);
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+
+    const toLight = screen.getByRole("button", { name: /switch to light mode/i });
+    await userEvent.click(toLight);
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
   });
 
   it("shows a no-results message when nothing matches", async () => {
@@ -146,7 +198,7 @@ describe("App", () => {
     await screen.findByText("123 Main St, Apt 4B");
 
     await userEvent.type(screen.getByLabelText(/^city$/i), "Fairfax");
-    await userEvent.click(screen.getByRole("button", { name: /^search$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^apply filters$/i }));
 
     await waitFor(() =>
       expect(requests.at(-1)?.searchParams.get("city")).toBe("Fairfax"),
@@ -162,9 +214,119 @@ describe("App", () => {
 
     await userEvent.type(screen.getByLabelText(/min price/i), "600000");
     await userEvent.type(screen.getByLabelText(/max price/i), "400000");
-    await userEvent.click(screen.getByRole("button", { name: /^search$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^apply filters$/i }));
 
     expect(await screen.findByText(/less than or equal/i)).toBeInTheDocument();
     expect(requests).toHaveLength(requestsBefore);
+  });
+
+  it("collapses and expands the filter panel, remembering the choice", async () => {
+    handleListings(() => page());
+    renderApp();
+    await screen.findByText("123 Main St, Apt 4B");
+
+    const toggle = screen.getByRole("button", { name: /^filters$/i });
+    const fields = document.getElementById("filter-fields");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(fields).not.toBeNull();
+    expect(fields).toBeVisible();
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById("filter-fields")).not.toBeVisible();
+    // The submit action stays available while the panel is collapsed.
+    expect(
+      screen.getByRole("button", { name: /^apply filters$/i }),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem("xillow-filters-open")).toBe("closed");
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById("filter-fields")).toBeVisible();
+    expect(window.localStorage.getItem("xillow-filters-open")).toBe("open");
+  });
+
+  it("defaults the filter panel to collapsed on narrow screens", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }));
+    handleListings(() => page());
+    renderApp();
+    await screen.findByText("123 Main St, Apt 4B");
+
+    const toggle = screen.getByRole("button", { name: /^filters$/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById("filter-fields")).not.toBeVisible();
+    // A viewport default is not an explicit choice, so nothing is persisted.
+    expect(window.localStorage.getItem("xillow-filters-open")).toBeNull();
+  });
+
+  it("disables Apply Filters and Reset until a filter is present", async () => {
+    handleListings(() => page());
+    renderApp();
+    await screen.findByText("123 Main St, Apt 4B");
+
+    const apply = screen.getByRole("button", { name: /^apply filters$/i });
+    const reset = screen.getByRole("button", { name: /^reset all filters$/i });
+    expect(apply).toBeDisabled();
+    expect(reset).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText(/^city$/i), "Fairfax");
+    expect(apply).toBeEnabled();
+    expect(reset).toBeEnabled();
+
+    await userEvent.clear(screen.getByLabelText(/^city$/i));
+    expect(apply).toBeDisabled();
+    expect(reset).toBeDisabled();
+  });
+
+  it("resets every filter (but keeps results per page) from the bottom action", async () => {
+    const requests = handleListings((requestedPage) => page({ page: requestedPage }));
+    renderApp({
+      initialEntries: ["/?city=Fairfax&minBedrooms=2&page=1&pageSize=25"],
+    });
+    await screen.findByText("123 Main St, Apt 4B");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /^reset all filters$/i }),
+    );
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.searchParams.get("city")).toBeNull(),
+    );
+    const last = requests.at(-1)!.searchParams;
+    expect(last.get("minBedrooms")).toBeNull();
+    expect(last.get("page")).toBe("1");
+    expect(last.get("pageSize")).toBe("25");
+    expect(screen.getByLabelText(/^city$/i)).toHaveValue("");
+  });
+
+  it("keeps Apply Filters enabled when the URL has filters, so they can be cleared", async () => {
+    handleListings(() => page());
+    renderApp({ initialEntries: ["/?city=Fairfax&page=1"] });
+    await screen.findByText("123 Main St, Apt 4B");
+
+    const apply = screen.getByRole("button", { name: /^apply filters$/i });
+    expect(apply).toBeEnabled();
+
+    await userEvent.clear(screen.getByLabelText(/^city$/i));
+    expect(apply).toBeEnabled();
+  });
+
+  it("badges the toggle with the number of active filters", async () => {
+    handleListings((requestedPage) => page({ page: requestedPage }));
+    renderApp({ initialEntries: ["/?city=Fairfax&minBedrooms=2&page=1"] });
+    await screen.findByText("123 Main St, Apt 4B");
+
+    expect(
+      screen.getByRole("button", { name: /filters, 2 active/i }),
+    ).toBeInTheDocument();
   });
 });

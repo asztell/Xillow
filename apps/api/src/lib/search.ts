@@ -1,5 +1,6 @@
 import { SearchParams, SearchResult } from "../types";
 import { ListingRepository } from "../repositories/listingRepository";
+import { annotateDuplicates } from "./dedupe";
 import { rankListings } from "./scoring";
 
 export interface SearchOptions {
@@ -8,8 +9,8 @@ export interface SearchOptions {
 }
 
 /**
- * Runs a search: filters via the repository, ranks the matches by relevance,
- * then slices out the requested page.
+ * Runs a search: filters via the repository, annotates likely duplicates, ranks
+ * the matches by relevance, then slices out the requested page.
  *
  * Ranking is done in application code (rather than SQL) so the scoring rules
  * stay in one easily testable place. See README for the trade-off at scale.
@@ -27,7 +28,11 @@ export async function searchListings(
     keyword: params.keyword,
   });
 
-  const ranked = rankListings(listings, {
+  // Duplicates are annotated, not removed: every source row is ranked and
+  // returned, and `total` keeps counting raw rows.
+  const annotated = annotateDuplicates(listings);
+
+  const ranked = rankListings(annotated, {
     targetBudget: params.targetBudget,
     now: options.now,
   });

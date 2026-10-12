@@ -1,4 +1,4 @@
-import { Listing, ScoredListing } from "../types";
+import { Listing } from "../types";
 
 /**
  * Relevance scoring
@@ -64,11 +64,16 @@ export function recencyScore(
   return clamp01(Math.exp(-ageDays / tau));
 }
 
-/** Computes the relevance score for a single listing and attaches it. */
-export function scoreListing(
-  listing: Listing,
+/**
+ * Computes the relevance score for a single listing and attaches it.
+ *
+ * Generic over the listing shape so any extra annotations on the input (e.g.
+ * duplicate metadata) are preserved on the way out.
+ */
+export function scoreListing<T extends Listing>(
+  listing: T,
   options: ScoringOptions = {},
-): ScoredListing {
+): T & { score: number } {
   const now = options.now ?? new Date();
   const recency = recencyScore(
     listing.listedDate,
@@ -94,7 +99,10 @@ export function scoreListing(
 }
 
 /** Comparator: score desc, then id asc, then source asc (stable ties). */
-export function compareScored(a: ScoredListing, b: ScoredListing): number {
+export function compareScored(
+  a: { score: number; id: string; source: string },
+  b: { score: number; id: string; source: string },
+): number {
   if (b.score !== a.score) {
     return b.score - a.score;
   }
@@ -108,10 +116,10 @@ export function compareScored(a: ScoredListing, b: ScoredListing): number {
 }
 
 /** Scores and ranks a list of listings (does not paginate). */
-export function rankListings(
-  listings: Listing[],
+export function rankListings<T extends Listing>(
+  listings: T[],
   options: ScoringOptions = {},
-): ScoredListing[] {
+): (T & { score: number })[] {
   return listings
     .map((listing) => scoreListing(listing, options))
     .sort(compareScored);

@@ -104,6 +104,32 @@ export function hasErrors(errors: FormErrors): boolean {
   return Object.keys(errors).length > 0;
 }
 
+/**
+ * The facets that count as "active" filters. Pagination (`page`, `pageSize`) is
+ * a display setting, not a filter, so it is excluded from the tally.
+ */
+const FILTER_KEYS = [
+  "minPrice",
+  "maxPrice",
+  "minBedrooms",
+  "city",
+  "keyword",
+  "targetBudget",
+] as const satisfies readonly (keyof ListingsQuery)[];
+
+/** How many facets the given query narrows by, for the "Filters" badge. */
+export function countActiveFilters(query: ListingsQuery): number {
+  return FILTER_KEYS.filter((key) => {
+    const value = query[key];
+    return value !== undefined && value !== "";
+  }).length;
+}
+
+/** How many facets the draft form currently fills in. */
+export function countActiveFormFilters(values: FilterFormValues): number {
+  return FILTER_KEYS.filter((key) => values[key].trim() !== "").length;
+}
+
 /** Converts validated form values into an applied query for the given page. */
 export function queryFromForm(values: FilterFormValues, page: number): ListingsQuery {
   const asNumber = (raw: string) => {

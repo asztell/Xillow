@@ -149,7 +149,21 @@ Any parameter may be omitted. Empty values are treated as omitted.
       "listedDate": "2026-08-29T00:00:00.000Z",
       "status": "active",
       "description": "Bright top-floor condo near shops and transit. Pet friendly.",
-      "score": 0.87
+      "score": 0.87,
+      "duplicateGroupId": "dup-01",
+      "potentialDuplicates": [
+        {
+          "id": "B7",
+          "source": "MLS_B",
+          "address": "123 Main Street, Unit 4B",
+          "city": "Springfield",
+          "state": "VA",
+          "zip": "22150",
+          "price": 452000,
+          "listedDate": "2026-08-27T00:00:00.000Z"
+        }
+      ],
+      "isPrimary": true
     }
   ]
 }
@@ -189,7 +203,20 @@ the current page, and pagination — calling `GET /api/listings` for real data.
 ### Behaviour
 
 - **Filters:** `minPrice`, `maxPrice`, `minBedrooms`, `city`, `keyword`,
-  `targetBudget`, and `pageSize`. Submitting a search always resets to page 1.
+  `targetBudget`, and `pageSize`. They live behind a collapsible **"Filters"**
+  toggle (`aria-expanded`/`aria-controls`) that badges the number of active
+  facets. The panel defaults to open on desktop and collapsed under 640px, and an
+  explicit toggle is remembered in `localStorage` (so the viewport default keeps
+  adapting until the user chooses). The toggle carries a funnel glyph on the
+  left, the label, an active-facet count badge, and a chevron on the right. The
+  **Apply Filters** / **Reset all filters** actions share that top row, aligned
+  right, and stay visible whether the panel is open or closed. Apply validates and
+  resets to page 1; Reset clears every facet and applies immediately (keeping the
+  chosen "results per page"). Both are disabled only when there is nothing to
+  apply or clear (no facet filled in *and* none in the URL), and stay enabled
+  while the URL has filters so they can be cleared. (The feature is a *search* —
+  the endpoint, results, and URL are named that way — whose inputs are
+  *filters*.)
 - **Ranked results:** address, city, price, bedrooms, baths, sqft, and the
   relevance score returned by the API; results are shown in the order the API
   ranked them.
@@ -199,6 +226,11 @@ the current page, and pagination — calling `GET /api/listings` for real data.
 - **Validation:** the form mirrors the API's rules client-side for instant
   feedback (e.g. `minPrice ≤ maxPrice`, `pageSize` 1–100) while the API remains
   the source of truth.
+- **Theme:** a light/dark toggle sits at the right of the header. It flips
+  `data-theme` on `<html>`, which swaps the CSS custom properties in
+  `index.css`; the choice persists to `localStorage` and otherwise follows the
+  OS preference. An inline script in `index.html` applies the theme before first
+  paint so there is no flash of the wrong palette.
 
 ### State, URL, and data flow
 
@@ -270,6 +302,73 @@ Weights and the 30-day time constant are configurable in `scoring.ts`.
 **Tie-breaking:** ties are broken by `id`, then `source`, giving a **stable,
 deterministic order** so that pagination never duplicates or skips rows.
 
+## Duplicate listings
+
+The same property is routinely carried by more than one MLS feed — in
+`sample_listings.json` four of the twelve rows are cross-source duplicates
+(`A1`/`B7`, `A2`/`B8`, `A3`/`B9`, `A5`/`B11`), so **12 rows describe 8 distinct
+homes**.
+
+We deliberately **keep every source row and annotate it** rather than collapsing:
+
+- `total` keeps counting raw rows — nothing is silently dropped;
+- each row carries `duplicateGroupId`, `potentialDuplicates` (its sibling rows,
+  including the sibling's full address and price) and `isPrimary`;
+- the UI shows a *"Possible duplicate of <full address> (<source> <price>)"* note
+  on every row in a group.
+
+### How duplicates are found
+
+Implemented in `apps/api/src/lib/dedupe.ts` (`duplicateKey` / `annotateDuplicates`):
+
+1. **Geocode (primary).** Rows at the same location are the same place.
+   Coordinates are quantized to ~11 m so trivial geocoder jitter still matches;
+   in the sample the duplicates share coordinates exactly.
+2. **Normalized address (fallback).** When coordinates are missing we compare a
+   normalized form: lowercase, punctuation stripped, street types canonicalized
+   (`st`→`street`, `ave`→`avenue`, `ct`→`court`) and the unit lifted out
+   (`apt`/`unit`/`#`). The `zip` is ignored — feeds disagree on it (`A2`/`B8`
+   differ: 22150 vs 22151).
+3. **Unit guard.** The unit is part of the key, so two condos in one building
+   (`Apt 4B` vs `Apt 5C`) are **not** merged even though they share a geocode.
+
+`A4`/`B10` share a city and zip but differ on both address and coordinates, so
+they are correctly left un-flagged — the false positive a "same city/zip" rule
+would produce.
+
+### Which row is primary?
+
+Within a group the **newest `listedDate`** is marked `isPrimary` (ties broken by
+`id`, then `source`). This matches the app's recency-first ranking and assumes the
+most recently listed price is the most current.
+
+That is an assumption, not a fact, and the data shows why it matters:
+
+| Group    | Newer (primary) | Older sibling | Primary price | Sibling price |
+| -------- | --------------- | ------------- | ------------- | ------------- |
+| A1 / B7  | A1 (08‑29)      | B7 (08‑27)    | 450,000       | 452,000       |
+| A2 / B8  | A2 (09‑02)      | B8 (08‑30)    | 525,000       | 527,500       |
+| A3 / B9  | A3 (09‑01)      | B9 (08‑25)    | 399,000       | 399,500       |
+| A5 / B11 | A5 (09‑04)      | B11 (08‑15)   | **470,000**   | **465,000**   |
+
+In three of the four groups the newer row is also the cheaper one, but **A5/B11
+goes the other way** — the newest listing is $5k *more* expensive. `listedDate`
+is the original list date, not a price-change timestamp, so an older, cheaper row
+may well reflect a recent price reduction. Because both rows stay in the results
+with their own prices, that spread remains visible: the annotation flags the
+sibling but never hides it. A real `modifiedAt`/`priceUpdatedAt` from the feeds
+would make "most accurate price" exact; the received schema has no such column,
+so `listedDate` is the documented proxy.
+
+### Trade-offs
+
+- Detection runs over the **filtered** result set, so a filter that excludes one
+  sibling (e.g. `maxPrice=451000` drops `B7`) suppresses the note on the survivor.
+  Materializing a `dup_key` at ingest would remove that caveat and scale better —
+  the same detection function would drive it.
+- Grouping uses a quantized geocode key (O(n)); a Haversine ≤ 50 m union-find is
+  the scale-grade version that avoids grid-boundary edge effects.
+
 ## Trade-offs
 
 - **Ranking in application code, not SQL.** Filtering is pushed down to
@@ -301,6 +400,10 @@ deterministic order** so that pagination never duplicates or skips rows.
 - **Client validation mirrors the API, but doesn't replace it.** The form
   catches obvious mistakes for instant feedback; the API still validates
   everything (defence in depth), and server `400`s are surfaced in the UI.
+- **Duplicates are annotated, not merged.** Keeping every source row means
+  `total` counts listings, not distinct homes; merging would make `total` mean
+  "distinct properties" but would hide the price spread and provenance. See
+  "Duplicate listings" above.
 
 ## Tests
 
@@ -314,9 +417,12 @@ npm test
   pagination boundaries, empty values, repeated params.
 - `apps/api/src/lib/scoring.test.ts` — budget/recency math, weight blending,
   tied scores and deterministic ordering.
+- `apps/api/src/lib/dedupe.test.ts` — address normalization, the geocode key, the
+  unit guard, the address fallback, and grouping/primary selection over the
+  sample's four duplicate pairs (including the newer-but-pricier `A5`/`B11`).
 - `apps/api/src/routes/listings.test.ts` — the HTTP layer against an in-memory
-  repository: filtering, pagination boundaries, empty results, `400`s and the
-  `500` path.
+  repository: filtering, pagination boundaries, empty results, duplicate
+  annotation, `400`s and the `500` path.
 
 **UI**
 
@@ -327,8 +433,11 @@ npm test
 - `apps/web/src/api/client.test.ts` — URL building and error mapping for `400`
   (with `field`), `500`, and transport failures.
 - `apps/web/src/App.test.tsx` — the rendered app against MSW: ranked results
-  (address/price/bedrooms/score), loading, no-results, error + retry, pagination
-  boundaries, filter submission, and client-side validation.
+  (address/price/bedrooms/score), the duplicate note + full sibling address and
+  "most recent" tag, the theme toggle, the collapsible filter panel (toggle +
+  active-filter badge), the Apply/Reset actions (including resetting every
+  facet), loading, no-results, error + retry, pagination boundaries, filter
+  submission, and client-side validation.
 
 ## Project layout
 
@@ -345,7 +454,8 @@ apps/api/
     repositories/listingRepository.ts   ListingRepository interface + Kysely impl
     lib/validation.ts          query parsing/validation (pure)
     lib/scoring.ts             relevance scoring (pure)
-    lib/search.ts              filter -> rank -> paginate orchestration
+    lib/dedupe.ts              cross-source duplicate detection (pure)
+    lib/search.ts              filter -> annotate duplicates -> rank -> paginate
   schema.sql                   table DDL (composite PK, timestamptz)
   sample_listings.json         seed data
 apps/web/
@@ -358,8 +468,8 @@ apps/web/
     hooks/useListings.ts       TanStack Query server state
     lib/query.ts               ListingsQuery parse/serialize
     lib/form.ts                form values, validation, conversion
-    lib/format.ts              price/score formatting
-    components/                SearchForm, Results, ResultsTable, Pagination
+    lib/format.ts              price/score/address formatting
+    components/                SearchForm, Results, ResultsTable, Pagination, ThemeToggle
   vite.config.ts               React plugin + /api dev proxy + Vitest config
 packages/types/
   src/index.ts                 shared domain + API contract types

@@ -76,8 +76,9 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 function sampleListings(): Listing[] {
   return [
     makeListing({ id: "A1", source: "MLS_A", address: "123 Main St", price: 450000, bedrooms: 2, city: "Springfield" }),
-    makeListing({ id: "A2", source: "MLS_A", address: "456 Oak Ave", price: 525000, bedrooms: 3, city: "Springfield", description: "Fenced yard, pets allowed" }),
-    makeListing({ id: "A3", source: "MLS_A", address: "789 Pine Rd", price: 399000, bedrooms: 2, city: "Fairfax", description: "Cozy starter home, no pets" }),
+    makeListing({ id: "A2", source: "MLS_A", address: "456 Oak Ave", price: 525000, bedrooms: 3, city: "Springfield", description: "Fenced yard, pets allowed", latitude: 38.7791, longitude: -77.1901 }),
+    makeListing({ id: "A3", source: "MLS_A", address: "789 Pine Rd", price: 399000, bedrooms: 2, city: "Fairfax", description: "Cozy starter home, no pets", latitude: 38.8462, longitude: -77.3064 }),
+    // Same geocode as A1 => flagged as a cross-source duplicate.
     makeListing({ id: "B7", source: "MLS_B", address: "123 Main Street", price: 452000, bedrooms: 2, city: "Springfield", description: "Top floor condo, pets allowed" }),
   ];
 }
@@ -103,6 +104,45 @@ describe("GET /api/listings", () => {
     expect(first).toHaveProperty("price");
     expect(first).toHaveProperty("bedrooms");
     expect(typeof first.score).toBe("number");
+  });
+
+  it("keeps duplicate rows and annotates them instead of collapsing", async () => {
+    const app = createApp(new FakeListingRepository(sampleListings()));
+    const res = await request(app).get("/api/listings").query({ city: "Springfield" });
+
+    expect(res.status).toBe(200);
+    // Nothing is removed: A1, A2 and B7 are all returned.
+    expect(res.body.total).toBe(3);
+
+    const byId = new Map<string, Record<string, unknown>>(
+      res.body.results.map((listing: { id: string }) => [
+        listing.id,
+        listing as Record<string, unknown>,
+      ]),
+    );
+    const a1 = byId.get("A1")!;
+    const b7 = byId.get("B7")!;
+
+    expect(a1.duplicateGroupId).toBe(b7.duplicateGroupId);
+    expect(a1.duplicateGroupId).not.toBeNull();
+    expect(a1.potentialDuplicates).toEqual([
+      {
+        id: "B7",
+        source: "MLS_B",
+        address: "123 Main Street",
+        city: "Springfield",
+        state: "VA",
+        zip: "22150",
+        price: 452000,
+        listedDate: SAME_DATE,
+      },
+    ]);
+    expect(a1.isPrimary).toBe(true);
+    expect(b7.isPrimary).toBe(false);
+
+    // A2 shares the city but not the location, so it is not flagged.
+    expect(byId.get("A2")!.duplicateGroupId).toBeNull();
+    expect(byId.get("A2")!.potentialDuplicates).toEqual([]);
   });
 
   it("forwards all filters to the repository", async () => {

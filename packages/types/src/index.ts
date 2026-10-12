@@ -29,8 +29,37 @@ export interface Listing {
   description: string | null;
 }
 
-/** A listing annotated with its computed relevance score (0..1). */
-export interface ScoredListing extends Listing {
+/** A sibling row from another source that appears to describe the same property. */
+export interface DuplicateRef {
+  id: string;
+  source: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  price: number;
+  /** ISO-8601 timestamp. */
+  listedDate: string;
+}
+
+/**
+ * Duplicate suspicion attached to a listing.
+ *
+ * We deliberately keep every source row in the result set (no collapsing): the
+ * same home carried by two MLS feeds shows up twice, each annotated so the UI
+ * can flag it. `total` therefore counts raw rows, not distinct properties.
+ */
+export interface DuplicateAnnotation {
+  /** Stable id shared by every row in a suspected group; null when unique. */
+  duplicateGroupId: string | null;
+  /** The other rows that appear to describe the same property. */
+  potentialDuplicates: DuplicateRef[];
+  /** True for the newest `listedDate` in a group of two or more. */
+  isPrimary: boolean;
+}
+
+/** A listing annotated with its relevance score and duplicate suspicion. */
+export interface ScoredListing extends Listing, DuplicateAnnotation {
   score: number;
 }
 

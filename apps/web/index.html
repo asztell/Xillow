@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xillow — Listing Search</title>
+    <!-- Apply the saved/OS theme before first paint to avoid a flash of the
+         wrong palette. Kept in sync with apps/web/src/components/ThemeToggle.tsx. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("xillow-theme");
+          var theme =
+            stored === "light" || stored === "dark"
+              ? stored
+              : window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          /* ignore - defaults to the light palette */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

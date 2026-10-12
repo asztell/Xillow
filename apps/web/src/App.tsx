@@ -1,5 +1,6 @@
 import { Results } from "./components/Results";
 import { SearchForm } from "./components/SearchForm";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { useListings } from "./hooks/useListings";
 import { useListingQuery } from "./hooks/useListingQuery";
 import { filtersKey } from "./lib/query";
@@ -19,7 +20,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Xillow</h1>
+        <div className="app-header-row">
+          <h1>Xillow</h1>
+          <ThemeToggle />
+        </div>
         <p className="app-tagline">
           Search property listings across multiple MLS feeds.
         </p>

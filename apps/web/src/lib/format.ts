@@ -12,3 +12,13 @@ export function formatPrice(value: number): string {
 export function formatScore(value: number): string {
   return value.toFixed(3);
 }
+
+/** Single-line full address, e.g. "123 Main St, Springfield, VA 22150". */
+export function formatFullAddress(parts: {
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+}): string {
+  return `${parts.address}, ${parts.city}, ${parts.state} ${parts.zip}`;
+}
