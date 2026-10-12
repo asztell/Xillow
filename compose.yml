@@ -1,3 +1,14 @@
+# Xillow - local full-stack stack.
+#
+#   npm run docker:up      # docker compose up --build  (db + api + web)
+#
+# Brings up Postgres, seeds it once, then serves the API and the built UI.
+# Internal traffic uses service names on the compose network; only the published
+# ports below are reachable from the host:
+#   web -> http://localhost:8080
+#   api -> http://localhost:3000
+#   db  -> localhost:5433
+
 services:
   db:
     image: postgres:18
@@ -21,6 +32,70 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # One-shot job: applies the schema and loads sample_listings.json, then exits.
+  # The API only starts once this completes successfully.
+  seed:
+    image: xillow-api:local
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: xillow-seed
+    init: true
+    restart: "no"
+    command: ["node", "apps/api/dist/seed.js"]
+    environment:
+      DATABASE_URL: &database-url postgres://xillow:xillow@db:5432/xillow
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: xillow-api:local
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: xillow-api
+    init: true
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *database-url
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  web:
+    image: xillow-web:local
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: xillow-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:

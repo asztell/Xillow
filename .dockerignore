@@ -1,0 +1,22 @@
+# Build context hygiene: never ship these into an image.
+# Keep in sync with .gitignore where it makes sense.
+
+# Dependencies and build output (rebuilt inside the image)
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+
+# Version control and local config
+.git
+.gitignore
+.env
+*.log
+.DS_Store
+
+# Docs / assessment material not needed by any image
+Coding_Test_Question_Paper.pdf
+Coding_Test_Question_Paper.txt
+README.md

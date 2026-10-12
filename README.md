@@ -41,6 +41,37 @@ The database listens on **host port 5433** (not the default 5432) so it won't
 clash with an existing local Postgres. Change the mapping in `compose.yml` and
 `DATABASE_URL` in `.env` if you prefer another port.
 
+### Run everything in Docker
+
+One command builds and runs the database, API, and UI together — nothing else
+needed on the host except Docker:
+
+```bash
+npm run docker:up      # docker compose up --build (foreground; logs streamed)
+```
+
+Then open **http://localhost:8080**.
+
+| Service | URL / port               | Notes                                        |
+| ------- | ------------------------ | -------------------------------------------- |
+| `web`   | http://localhost:8080    | nginx serving the built UI                   |
+| `api`   | http://localhost:3000    | Express API (health: `/api/health`)          |
+| `db`    | localhost:5433           | PostgreSQL 18                                |
+
+Compose starts in dependency order: `db` (healthy) → `seed` (one-shot; applies
+the schema and loads the sample data, then exits) → `api` (healthy) → `web`. The
+UI calls same-origin `/api/*`, which nginx reverse-proxies to the `api` service,
+so there is no CORS setup in production either.
+
+```bash
+npm run docker:down    # stop the stack
+npm run docker:reset   # stop and delete the DB volume (fresh seed next run)
+npm run docker:logs    # follow logs
+```
+
+Images are built from multi-stage `Dockerfile`s (`apps/api`, `apps/web`) with a
+root `.dockerignore`; the API runtime image runs as the non-root `node` user.
+
 ### Scripts
 
 Run from the repo root (they fan out to the workspaces):
@@ -54,6 +85,9 @@ Run from the repo root (they fan out to the workspaces):
 | `npm test`          | Run all workspace test suites                       |
 | `npm run typecheck` | Type-check all workspaces                           |
 | `npm run build`     | Build all workspaces                                |
+| `npm run docker:up` | Build + run db, api, and web in Docker              |
+| `npm run docker:down` | Stop the Docker stack                             |
+| `npm run docker:reset` | Stop the stack and delete the DB volume          |
 
 The same scripts exist inside `apps/api` and `apps/web`, e.g.
 `npm run build -w @xillow/web`.
