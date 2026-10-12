@@ -52,7 +52,10 @@ so this stack and the manual `npm run dev` server can run **at the same time**:
 | DB | 5433 | 5433 (shared) |
 
 Both modes point at the same Postgres on 5433, so they see identical data; the
-Docker `seed` job re-runs on each `up` but is idempotent.
+Docker `seed` job re-runs on each `up` but is idempotent. Rows are upserted on the
+composite `(id, source)` key, so re-running never duplicates them; the loader also
+warns if the *input batch* repeats a key (an accidental copy, or a conflicting
+repeat where the later entry wins), instead of overwriting in silence.
 
 Compose starts in dependency order: `db` (healthy) → `seed` (one-shot; applies
 the schema and loads the sample data, then exits) → `api` (healthy) → `web`. The
@@ -425,6 +428,13 @@ npm test
 - `apps/api/src/routes/listings.test.ts` — the HTTP layer against an in-memory
   repository: filtering, pagination boundaries, empty results, duplicate
   annotation, `400`s and the `500` path.
+- `apps/api/src/lib/seeding.test.ts` — the ingest helpers: date normalization and
+  duplicate-key detection (identical vs. conflicting repeats, report ordering).
+- `apps/api/src/seed.integration.test.ts` — seeds a throwaway Postgres database
+  twice and asserts the row count is stable and no `(id, source)` key is
+  duplicated (and that a conflicting repeat resolves to the last value). It
+  self-skips when no database is reachable, so `npm test` still passes without
+  Docker running.
 
 **UI**
 
@@ -458,6 +468,7 @@ apps/api/
     lib/scoring.ts             relevance scoring (pure)
     lib/dedupe.ts              cross-source duplicate detection (pure)
     lib/search.ts              filter -> annotate duplicates -> rank -> paginate
+    lib/seeding.ts             ingest helpers (idempotent upsert + duplicate audit)
   schema.sql                   table DDL (composite PK, timestamptz)
   sample_listings.json         seed data
 apps/web/
