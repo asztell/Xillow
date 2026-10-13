@@ -5,7 +5,8 @@ import type { Database } from "../db";
  * Ingest helpers shared by the seed CLI and the seed tests.
  *
  * `sample_listings.json` mirrors the records received from the source systems,
- * so its shape is kept verbatim (no added columns such as an "updated at").
+ * so its shape is kept verbatim (no derived columns such as an "updated at";
+ * `photos` is part of what a feed sends).
  */
 
 /** One record exactly as received in `sample_listings.json`. */
@@ -25,6 +26,8 @@ export interface SampleListing {
   listedDate: string;
   status: string;
   description: string | null;
+  /** Photo URLs as received from the source system; omit/empty when none exist. */
+  photos?: string[];
 }
 
 /** Normalizes an ISO date ("2026-08-29") to a UTC timestamp. */
@@ -120,6 +123,7 @@ export async function upsertListings(
           listed_date: new Date(toTimestamp(listing.listedDate)),
           status: listing.status,
           description: listing.description,
+          photos: listing.photos ?? [],
         })
         .onConflict((oc) =>
           oc.columns(["id", "source"]).doUpdateSet((eb) => ({
@@ -136,6 +140,7 @@ export async function upsertListings(
             listed_date: eb.ref("excluded.listed_date"),
             status: eb.ref("excluded.status"),
             description: eb.ref("excluded.description"),
+            photos: eb.ref("excluded.photos"),
           })),
         )
         .execute();

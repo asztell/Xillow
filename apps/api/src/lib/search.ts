@@ -2,6 +2,7 @@ import { SearchParams, SearchResult } from "../types";
 import { ListingRepository } from "../repositories/listingRepository";
 import { annotateDuplicates } from "./dedupe";
 import { rankListings } from "./scoring";
+import { sortListings } from "./sorting";
 
 export interface SearchOptions {
   /** Reference "now" - injectable for deterministic tests. */
@@ -32,15 +33,19 @@ export async function searchListings(
   // returned, and `total` keeps counting raw rows.
   const annotated = annotateDuplicates(listings);
 
-  const ranked = rankListings(annotated, {
+  const scored = rankListings(annotated, {
     targetBudget: params.targetBudget,
     now: options.now,
   });
 
-  const total = ranked.length;
+  // Apply the requested sort before paginating so every page reflects the same
+  // global order. "Recommended" keeps the relevance ranking above.
+  const sorted = sortListings(scored, params.sort ?? "recommended");
+
+  const total = sorted.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / params.pageSize);
   const start = (params.page - 1) * params.pageSize;
-  const results = ranked.slice(start, start + params.pageSize);
+  const results = sorted.slice(start, start + params.pageSize);
 
   return {
     page: params.page,

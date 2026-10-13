@@ -126,7 +126,8 @@ export function SearchForm({
     const nextErrors = validateFilters(values);
     setErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
-    onSubmit(queryFromForm(values, 1));
+    // Preserve the current sort across filter changes, like the major portals.
+    onSubmit({ ...queryFromForm(values, 1), sort: query.sort });
   };
 
   // Clear every facet and apply immediately. `pageSize` is a display setting,
@@ -138,7 +139,7 @@ export function SearchForm({
     };
     setValues(cleared);
     setErrors({});
-    onSubmit(queryFromForm(cleared, 1));
+    onSubmit({ ...queryFromForm(cleared, 1), sort: query.sort });
   };
 
   return (

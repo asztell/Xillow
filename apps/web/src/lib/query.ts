@@ -1,8 +1,19 @@
-import type { SearchParams } from "@xillow/types";
+import type { SearchParams, SortKey } from "@xillow/types";
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 10;
 export const MAX_PAGE_SIZE = 100;
+
+/** Accepted `sort` values, mirrored from `apps/api/src/lib/sorting.ts`. */
+export const SORT_KEYS = [
+  "recommended",
+  "price_desc",
+  "price_asc",
+  "newest",
+  "bedrooms_desc",
+  "bathrooms_desc",
+  "sqft_desc",
+] as const satisfies readonly SortKey[];
 
 /** The applied search - the shape stored in the URL and sent to the API. */
 export type ListingsQuery = SearchParams;
@@ -50,11 +61,19 @@ export function parseListingsQuery(params: URLSearchParams): ListingsQuery {
     city: readString(params, "city"),
     keyword: readString(params, "keyword"),
     targetBudget: readNumber(params, "targetBudget", { min: 0 }),
+    sort: readSort(params),
     page: readNumber(params, "page", { integer: true, min: 1 }) ?? DEFAULT_PAGE,
     pageSize:
       readNumber(params, "pageSize", { integer: true, min: 1, max: MAX_PAGE_SIZE }) ??
       DEFAULT_PAGE_SIZE,
   };
+}
+
+/** Reads the `sort` param, dropping anything outside the whitelist. */
+function readSort(params: URLSearchParams): SortKey | undefined {
+  const raw = params.get("sort")?.trim();
+  if (raw === undefined) return undefined;
+  return (SORT_KEYS as readonly string[]).includes(raw) ? (raw as SortKey) : undefined;
 }
 
 /** Serializes an applied query to URL params in a stable, readable order. */
@@ -70,6 +89,7 @@ export function toSearchParams(query: ListingsQuery): URLSearchParams {
   if (query.city) params.set("city", query.city);
   if (query.keyword) params.set("keyword", query.keyword);
   setNumber("targetBudget", query.targetBudget);
+  if (query.sort && query.sort !== "recommended") params.set("sort", query.sort);
   params.set("page", String(query.page));
   params.set("pageSize", String(query.pageSize));
 
@@ -81,5 +101,6 @@ export function filtersKey(query: ListingsQuery): string {
   const params = toSearchParams(query);
   params.delete("page");
   params.delete("pageSize");
+  params.delete("sort");
   return params.toString();
 }

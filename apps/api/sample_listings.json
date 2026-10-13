@@ -14,7 +14,12 @@
     "longitude": -77.1873,
     "listedDate": "2026-08-29",
     "status": "active",
-    "description": "Bright top-floor condo near shops and transit. Pet friendly."
+    "description": "Bright top-floor condo near shops and transit. Pet friendly.",
+    "photos": [
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "B7",
@@ -31,7 +36,13 @@
     "longitude": -77.1873,
     "listedDate": "2026-08-27",
     "status": "active",
-    "description": "Top floor condo, walk to shopping. Pets allowed."
+    "description": "Top floor condo, walk to shopping. Pets allowed.",
+    "photos": [
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "A2",
@@ -42,13 +53,14 @@
     "zip": "22150",
     "price": 525000,
     "bedrooms": 3,
-    "bathrooms": 2.0,
+    "bathrooms": 2,
     "sqft": 1450,
     "latitude": 38.7791,
     "longitude": -77.1901,
     "listedDate": "2026-09-02",
     "status": "active",
-    "description": "Updated kitchen, fenced yard, close to schools."
+    "description": "Updated kitchen, fenced yard, close to schools.",
+    "photos": []
   },
   {
     "id": "B8",
@@ -59,13 +71,19 @@
     "zip": "22151",
     "price": 527500,
     "bedrooms": 3,
-    "bathrooms": 2.0,
+    "bathrooms": 2,
     "sqft": 1450,
     "latitude": 38.7791,
     "longitude": -77.1901,
     "listedDate": "2026-08-30",
     "status": "active",
-    "description": "Renovated kitchen, fenced backyard, near schools."
+    "description": "Renovated kitchen, fenced backyard, near schools.",
+    "photos": [
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "A3",
@@ -76,13 +94,18 @@
     "zip": "22030",
     "price": 399000,
     "bedrooms": 2,
-    "bathrooms": 1.0,
+    "bathrooms": 1,
     "sqft": 850,
     "latitude": 38.8462,
     "longitude": -77.3064,
     "listedDate": "2026-09-01",
     "status": "active",
-    "description": "Cozy starter home, no pets."
+    "description": "Cozy starter home, no pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "B9",
@@ -93,13 +116,19 @@
     "zip": "22030",
     "price": 399500,
     "bedrooms": 2,
-    "bathrooms": 1.0,
+    "bathrooms": 1,
     "sqft": 850,
     "latitude": 38.8462,
     "longitude": -77.3064,
     "listedDate": "2026-08-25",
     "status": "active",
-    "description": "Cozy starter home, pets not permitted."
+    "description": "Cozy starter home, pets not permitted.",
+    "photos": [
+      "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "A4",
@@ -110,13 +139,18 @@
     "zip": "20190",
     "price": 610000,
     "bedrooms": 4,
-    "bathrooms": 3.0,
+    "bathrooms": 3,
     "sqft": 2100,
     "latitude": 38.9586,
     "longitude": -77.357,
     "listedDate": "2026-09-03",
     "status": "active",
-    "description": "Spacious family home near Reston Town Center. Pets welcome."
+    "description": "Spacious family home near Reston Town Center. Pets welcome.",
+    "photos": [
+      "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "B10",
@@ -133,7 +167,13 @@
     "longitude": -77.3499,
     "listedDate": "2026-08-20",
     "status": "active",
-    "description": "Townhome with 2-car garage, community pool."
+    "description": "Townhome with 2-car garage, community pool.",
+    "photos": [
+      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "A5",
@@ -144,13 +184,18 @@
     "zip": "22180",
     "price": 470000,
     "bedrooms": 3,
-    "bathrooms": 2.0,
+    "bathrooms": 2,
     "sqft": 1300,
     "latitude": 38.9012,
     "longitude": -77.2653,
     "listedDate": "2026-09-04",
     "status": "active",
-    "description": "Quiet cul-de-sac, walkable to Metro. No pets."
+    "description": "Quiet cul-de-sac, walkable to Metro. No pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "B11",
@@ -161,13 +206,19 @@
     "zip": "22180",
     "price": 465000,
     "bedrooms": 3,
-    "bathrooms": 2.0,
+    "bathrooms": 2,
     "sqft": 1300,
     "latitude": 38.9012,
     "longitude": -77.2653,
     "listedDate": "2026-08-15",
     "status": "active",
-    "description": "Peaceful street, close to Metro. Pet restrictions apply."
+    "description": "Peaceful street, close to Metro. Pet restrictions apply.",
+    "photos": [
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "A6",
@@ -178,13 +229,18 @@
     "zip": "20110",
     "price": 415000,
     "bedrooms": 3,
-    "bathrooms": 2.0,
+    "bathrooms": 2,
     "sqft": 1600,
     "latitude": 38.7509,
     "longitude": -77.4753,
     "listedDate": "2026-08-10",
     "status": "active",
-    "description": "Split-level home, large driveway, pets allowed."
+    "description": "Split-level home, large driveway, pets allowed.",
+    "photos": [
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   },
   {
     "id": "A7",
@@ -201,6 +257,486 @@
     "longitude": -77.4316,
     "listedDate": "2026-07-28",
     "status": "pending",
-    "description": "Corner lot, recently painted, no pets due to HOA."
+    "description": "Corner lot, recently painted, no pets due to HOA.",
+    "photos": []
+  },
+  {
+    "id": "A8",
+    "source": "MLS_A",
+    "address": "7800 Old Keene Mill Rd",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 1195000,
+    "bedrooms": 5,
+    "bathrooms": 4,
+    "sqft": 3200,
+    "latitude": 38.7904,
+    "longitude": -77.1962,
+    "listedDate": "2026-10-13",
+    "status": "active",
+    "description": "Executive colonial on a half-acre lot with a renovated kitchen and dual primary suites. Pets welcome.",
+    "photos": [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "B12",
+    "source": "MLS_B",
+    "address": "4701 Augusta Dr",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 1050000,
+    "bedrooms": 5,
+    "bathrooms": 3.5,
+    "sqft": 2950,
+    "latitude": 38.7817,
+    "longitude": -77.1924,
+    "listedDate": "2026-09-18",
+    "status": "active",
+    "description": "Spacious colonial with a finished basement and three-car garage. HOA allows small pets.",
+    "photos": []
+  },
+  {
+    "id": "C1",
+    "source": "MLS_C",
+    "address": "6201 Lakeview Dr",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 968000,
+    "bedrooms": 4,
+    "bathrooms": 3.5,
+    "sqft": 2600,
+    "latitude": 38.7745,
+    "longitude": -77.1819,
+    "listedDate": "2026-10-13",
+    "status": "active",
+    "description": "Water-adjacent lot with a main-level bedroom and brand-new HVAC. Pet friendly.",
+    "photos": [
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "A10",
+    "source": "MLS_A",
+    "address": "7605 Hearthstone Ct",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 940000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "sqft": 2450,
+    "latitude": 38.7833,
+    "longitude": -77.1888,
+    "listedDate": "2026-08-11",
+    "status": "active",
+    "description": "Cul-de-sac colonial with a sunroom, fenced yard, minutes to the metro. No pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C2",
+    "source": "MLS_C",
+    "address": "5410 Flower Ln",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 365000,
+    "bedrooms": 2,
+    "bathrooms": 1.5,
+    "sqft": 1020,
+    "latitude": 38.7922,
+    "longitude": -77.1785,
+    "listedDate": "2026-04-02",
+    "status": "pending",
+    "description": "Affordable condo with an updated bath and community pool. Cats allowed.",
+    "photos": [
+      "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "B13",
+    "source": "MLS_B",
+    "address": "6304 Iroquois Ave",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 340000,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "sqft": 900,
+    "latitude": 38.7889,
+    "longitude": -77.1704,
+    "listedDate": "2026-02-14",
+    "status": "sold",
+    "description": "Entry-level townhome in original condition, sold as-is. No pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "A11",
+    "source": "MLS_A",
+    "address": "6980 Timber Ln",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 385000,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "sqft": 1150,
+    "latitude": 38.7809,
+    "longitude": -77.1681,
+    "listedDate": "2026-03-20",
+    "status": "active",
+    "description": "Renovated condo with in-unit laundry and covered parking. Pet friendly.",
+    "photos": [
+      "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C3",
+    "source": "MLS_C",
+    "address": "4230 Rosewood Ct",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 310000,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "sqft": 720,
+    "latitude": 38.7762,
+    "longitude": -77.1827,
+    "listedDate": "2026-01-18",
+    "status": "active",
+    "description": "Studio-style condo near bus lines with a low HOA fee. No pets.",
+    "photos": []
+  },
+  {
+    "id": "B14",
+    "source": "MLS_B",
+    "address": "5901 Walnut Ct",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 725000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "sqft": 2200,
+    "latitude": 38.7857,
+    "longitude": -77.1951,
+    "listedDate": "2026-10-13",
+    "status": "active",
+    "description": "Move-in ready twin with a new roof and large deck, metro close. Pets welcome.",
+    "photos": [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "A12",
+    "source": "MLS_A",
+    "address": "8120 Rolling Rd",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 680000,
+    "bedrooms": 4,
+    "bathrooms": 2.5,
+    "sqft": 2050,
+    "latitude": 38.7784,
+    "longitude": -77.1862,
+    "listedDate": "2026-09-25",
+    "status": "active",
+    "description": "Split-foyer with rec room, fenced backyard and updated baths. No pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C4",
+    "source": "MLS_C",
+    "address": "7100 Hilltop Dr",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 645000,
+    "bedrooms": 4,
+    "bathrooms": 2.5,
+    "sqft": 1980,
+    "latitude": 38.7708,
+    "longitude": -77.1793,
+    "listedDate": "2026-08-19",
+    "status": "active",
+    "description": "Rambler on a ridge with a sunroom and a big garage. Pet friendly.",
+    "photos": [
+      "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "A13",
+    "source": "MLS_A",
+    "address": "5050 Sleepy Hollow Rd",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 495000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "sqft": 1400,
+    "latitude": 38.7861,
+    "longitude": -77.1735,
+    "listedDate": "2026-03-05",
+    "status": "pending",
+    "description": "Classic rambler with hardwood floors, walk to the kids' park. Cats only.",
+    "photos": [
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "B15",
+    "source": "MLS_B",
+    "address": "5520 Cheltenham Dr",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 489000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "sqft": 1380,
+    "latitude": 38.7829,
+    "longitude": -77.1771,
+    "listedDate": "2026-02-27",
+    "status": "active",
+    "description": "Solid brick rancher with a screened porch and new windows. No pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C5",
+    "source": "MLS_C",
+    "address": "3300 Skye Dr",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 440000,
+    "bedrooms": 3,
+    "bathrooms": 1.5,
+    "sqft": 1250,
+    "latitude": 38.7845,
+    "longitude": -77.1839,
+    "listedDate": "2026-06-30",
+    "status": "active",
+    "description": "Mid-century rambler on an oversized lot, easy highway access. Pets allowed.",
+    "photos": [
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "A14",
+    "source": "MLS_A",
+    "address": "4400 University Dr",
+    "city": "Fairfax",
+    "state": "VA",
+    "zip": "22030",
+    "price": 750000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "sqft": 2300,
+    "latitude": 38.8419,
+    "longitude": -77.3102,
+    "listedDate": "2026-10-13",
+    "status": "active",
+    "description": "Colonial near GMU with hardwood, a deck and a fenced yard. Pet friendly.",
+    "photos": []
+  },
+  {
+    "id": "B16",
+    "source": "MLS_B",
+    "address": "11800 Sunrise Valley Dr",
+    "city": "Reston",
+    "state": "VA",
+    "zip": "20191",
+    "price": 820000,
+    "bedrooms": 4,
+    "bathrooms": 3.5,
+    "sqft": 2400,
+    "latitude": 38.9492,
+    "longitude": -77.3564,
+    "listedDate": "2026-08-05",
+    "status": "active",
+    "description": "Sunlit townhome with an elevator and lake trail access. HOA restricts pets.",
+    "photos": [
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C6",
+    "source": "MLS_C",
+    "address": "2514 Cedar Ln",
+    "city": "Vienna",
+    "state": "VA",
+    "zip": "22180",
+    "price": 699000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "sqft": 2100,
+    "latitude": 38.8968,
+    "longitude": -77.2691,
+    "listedDate": "2026-09-09",
+    "status": "active",
+    "description": "Expanded cape cod with a primary suite and stone patio. Pets welcome.",
+    "photos": [
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "B17",
+    "source": "MLS_B",
+    "address": "7717 Bakersfield Ln",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 560000,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "sqft": 1650,
+    "latitude": 38.7767,
+    "longitude": -77.1755,
+    "listedDate": "2026-07-22",
+    "status": "active",
+    "description": "Bright rambler with a refinished lower level and dog run. No cats per HOA.",
+    "photos": []
+  },
+  {
+    "id": "A15",
+    "source": "MLS_A",
+    "address": "6605 Mohawk Ln",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 520000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "sqft": 1500,
+    "latitude": 38.7817,
+    "longitude": -77.1631,
+    "listedDate": "2026-05-14",
+    "status": "active",
+    "description": "Fresh paint and floors, a carport and a quiet street. Pets allowed.",
+    "photos": [
+      "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C7",
+    "source": "MLS_C",
+    "address": "4803 Sedgwick St",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22151",
+    "price": 605000,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "sqft": 1850,
+    "latitude": 38.7875,
+    "longitude": -77.1906,
+    "listedDate": "2026-03-30",
+    "status": "active",
+    "description": "Townhome with a garage, updated kitchen and pool access. Pet friendly.",
+    "photos": [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
+  },
+  {
+    "id": "C8",
+    "source": "MLS_C",
+    "address": "123 Main Street, Apt 4B",
+    "city": "Springfield",
+    "state": "VA",
+    "zip": "22150",
+    "price": 448000,
+    "bedrooms": 2,
+    "bathrooms": 1.5,
+    "sqft": 980,
+    "latitude": 38.7893,
+    "longitude": -77.1873,
+    "listedDate": "2026-09-08",
+    "status": "active",
+    "description": "Bright top-floor condo, 1 mile to shops and transit. Feline friends welcome.",
+    "photos": []
+  },
+  {
+    "id": "C9",
+    "source": "MLS_C",
+    "address": "789 Pine Road",
+    "city": "Fairfax",
+    "state": "VA",
+    "zip": "22030",
+    "price": 401000,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "sqft": 850,
+    "latitude": 38.8462,
+    "longitude": -77.3064,
+    "listedDate": "2026-08-28",
+    "status": "active",
+    "description": "Cozy starter home, freshly staged. No pets per HOA.",
+    "photos": [
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=960&h=480&fit=crop&auto=format&q=70",
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?w=960&h=480&fit=crop&auto=format&q=70"
+    ]
   }
 ]

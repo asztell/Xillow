@@ -15,6 +15,7 @@
     "dev:api": "npm run dev -w @xillow/api",
     "dev:web": "npm run dev -w @xillow/web",
     "seed": "npm run seed -w @xillow/api",
+    "seed:photos": "npm run seed:photos -w @xillow/api",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

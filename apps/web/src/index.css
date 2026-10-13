@@ -248,6 +248,7 @@ body {
 }
 
 .field input:focus-visible,
+.select select:focus-visible,
 .theme-toggle:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--accent);
@@ -330,74 +331,260 @@ button:disabled {
 }
 
 /* --- Results --- */
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
 .results-meta {
-  margin: 0 0 0.75rem;
+  margin: 0;
   color: var(--text-muted);
   font-size: 0.9rem;
 }
 
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
+.sort-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sort-select-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sort-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.4rem 2.1rem 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  /* The native arrow hugs the right edge with no breathing room, so it is
+     replaced with a chevron that can be positioned away from the edge. */
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2352606d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M5 6.5l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 1em;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .sort-select select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M5 6.5l3 3 3-3'/%3E%3C/svg%3E");
+}
+
+.sort-select select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1rem;
+}
+
+.listing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0 1.1rem 1.1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
+  /* Clips the full-bleed photo strip to the card's rounded corners. */
   overflow: hidden;
-  font-size: 0.92rem;
 }
 
-.results-table th,
-.results-table td {
-  padding: 0.6rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-subtle);
+.listing-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.65rem;
 }
 
-.results-table thead th {
+.listing-card-tags {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-left: auto;
+  min-width: 0;
+}
+
+/* --- Photo strip (carousel), full-bleed across the top of the card --- */
+.listing-card-media {
+  margin: 0 -1.1rem 0.5rem;
+}
+
+.listing-photo {
+  position: relative;
+  /* Wide, never tall: fills the card top edge-to-edge at the 2:1 ratio. */
+  aspect-ratio: 2 / 1;
+  border-radius: 0;
+  overflow: hidden;
   background: var(--surface-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
 }
 
-.results-table tbody tr:last-child td {
-  border-bottom: none;
+.listing-photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.results-table .numeric {
-  text-align: right;
+.photo-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2933;
+  font-size: 1.15rem;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.photo-nav:hover:not(:disabled) {
+  background: #ffffff;
+  color: var(--accent-hover);
+}
+
+.photo-prev {
+  left: 0.4rem;
+}
+
+.photo-next {
+  right: 0.4rem;
+}
+
+.photo-count {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
 }
 
-.results-table .score {
+@media (max-width: 640px) {
+  .listing-photo {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+.listing-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.status-tag {
+  flex: none;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--tag-surface);
+  color: var(--tag-text);
+  font-size: 0.7rem;
+  text-transform: capitalize;
+}
+
+/* Address is fused with the locality into a single-line row: the street
+   (heading, strong) then a muted "city, ST ZIP" on the same baseline. */
+.listing-address-line {
+  display: flex;
+  align-items: baseline;
+  margin: 0.15rem 0 0;
+  line-height: 1.3;
+}
+
+.listing-address-line .listing-address {
+  margin: 0;
+  font-size: 1rem;
   font-weight: 600;
+  color: var(--text);
+}
+
+.listing-address-line .listing-locality {
+  flex: none;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.listing-address-line .listing-locality::before {
+  content: "\00b7"; /* "·" - pure decoration, kept out of the text content */
+  margin: 0 0.45rem;
+}
+
+.listing-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.listing-stat {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.listing-stat-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.listing-stat-label {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .source-tag {
   display: inline-block;
-  margin-left: 0.5rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
   background: var(--tag-surface);
   color: var(--tag-text);
   font-size: 0.7rem;
+  white-space: nowrap;
 }
 
 /* --- Duplicate hints --- */
 .primary-tag {
   display: inline-block;
-  margin-top: 0.25rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
   background: var(--success-surface);
   color: var(--success-text);
   font-size: 0.7rem;
+  white-space: nowrap;
 }
 
+/* The bottom of the card is reserved for the duplicate hint, full width. */
 .duplicate-note {
   display: block;
-  margin-top: 0.25rem;
+  margin: 0;
   color: var(--warning);
   font-size: 0.75rem;
 }

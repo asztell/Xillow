@@ -1,7 +1,8 @@
-import type { SearchResult } from "@xillow/types";
+import type { SearchResult, SortKey } from "@xillow/types";
 import { ListingApiError } from "../api/client";
 import { Pagination } from "./Pagination";
-import { ResultsTable } from "./ResultsTable";
+import { ListingCards } from "./ListingCards";
+import { SortSelect } from "./SortSelect";
 
 export type ResultsStatus = "loading" | "error" | "empty" | "success";
 
@@ -10,6 +11,8 @@ interface ResultsProps {
   data?: SearchResult;
   error: Error | null;
   isFetching: boolean;
+  sort?: SortKey;
+  onSortChange: (sort: SortKey) => void;
   onRetry: () => void;
   onPageChange: (page: number) => void;
 }
@@ -20,6 +23,8 @@ export function Results({
   data,
   error,
   isFetching,
+  sort,
+  onSortChange,
   onRetry,
   onPageChange,
 }: ResultsProps) {
@@ -55,11 +60,14 @@ export function Results({
 
   return (
     <section className="results" aria-label="Search results">
-      <p className="results-meta" aria-live="polite">
-        Showing {data.results.length} of {data.total} listings
-        {isFetching ? " · updating…" : ""}
-      </p>
-      <ResultsTable listings={data.results} />
+      <div className="results-header">
+        <p className="results-meta" aria-live="polite">
+          Showing {data.results.length} of {data.total} listings
+          {isFetching ? " · updating…" : ""}
+        </p>
+        <SortSelect value={sort} onChange={onSortChange} disabled={isFetching} />
+      </div>
+      <ListingCards listings={data.results} />
       <Pagination
         page={data.page}
         totalPages={data.totalPages}

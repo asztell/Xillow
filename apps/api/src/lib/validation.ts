@@ -1,4 +1,5 @@
-import { SearchParams } from "../types";
+import { SearchParams, SortKey } from "../types";
+import { isSortKey } from "./sorting";
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 10;
@@ -94,6 +95,20 @@ export function parseSearchParams(query: Record<string, unknown>): ParseResult {
   const city = readString("city");
   const keyword = readString("keyword");
 
+  const rawSort = readString("sort");
+  let sort: SortKey | undefined;
+  if (rawSort === undefined) {
+    sort = undefined;
+  } else if (isSortKey(rawSort)) {
+    sort = rawSort;
+  } else {
+    errors.push({
+      field: "sort",
+      message:
+        "sort must be one of: recommended, price_desc, price_asc, newest, bedrooms_desc, bathrooms_desc, sqft_desc",
+    });
+  }
+
   const page = readNumber("page", { integer: true, min: 1 }) ?? DEFAULT_PAGE;
 
   let pageSize = readNumber("pageSize", { integer: true, min: 1 });
@@ -125,6 +140,6 @@ export function parseSearchParams(query: Record<string, unknown>): ParseResult {
 
   return {
     ok: true,
-    params: { minPrice, maxPrice, minBedrooms, city, keyword, targetBudget, page, pageSize },
+    params: { minPrice, maxPrice, minBedrooms, city, keyword, targetBudget, sort, page, pageSize },
   };
 }

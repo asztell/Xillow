@@ -1,3 +1,4 @@
+import type { SortKey } from "@xillow/types";
 import { Results } from "./components/Results";
 import { SearchForm } from "./components/SearchForm";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -16,6 +17,10 @@ export default function App() {
       : listings.data && listings.data.total > 0
         ? "success"
         : "empty";
+
+  // Changing the sort is a new search: land on the first page.
+  const handleSortChange = (sort: SortKey) =>
+    setQuery({ ...query, sort, page: 1 });
 
   return (
     <div className="app">
@@ -43,6 +48,8 @@ export default function App() {
         data={listings.data}
         error={listings.error}
         isFetching={listings.isFetching}
+        sort={query.sort}
+        onSortChange={handleSortChange}
         onRetry={() => void listings.refetch()}
         onPageChange={(page) => setQuery({ ...query, page })}
       />

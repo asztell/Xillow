@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "seed": "tsx src/seed.ts",
+    "seed:photos": "node scripts/seed-photos.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc",

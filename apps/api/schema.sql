@@ -20,8 +20,13 @@ CREATE TABLE IF NOT EXISTS listings (
   listed_date TIMESTAMPTZ NOT NULL,
   status      TEXT NOT NULL,
   description TEXT,
+  photos      TEXT[] NOT NULL DEFAULT '{}',
   PRIMARY KEY (id, source)
 );
+
+-- Bring tables created before `photos` existed up to date (CREATE TABLE IF NOT
+-- EXISTS is a no-op for them, so the new column has to be added explicitly).
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS photos TEXT[] NOT NULL DEFAULT '{}';
 
 -- Supports the price-range filter and the default ordering.
 CREATE INDEX IF NOT EXISTS idx_listings_price ON listings (price);

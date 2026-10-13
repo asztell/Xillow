@@ -100,6 +100,7 @@ Run from the repo root (they fan out to the workspaces):
 | `npm run dev:api`   | Start only the API (`tsx` watch)                    |
 | `npm run dev:web`   | Start only the UI (Vite)                            |
 | `npm run seed`      | Create the schema and (re)seed from the JSON        |
+| `npm run seed:photos` | Regenerate curated property photos in the JSON    |
 | `npm test`          | Run all workspace test suites                       |
 | `npm run typecheck` | Type-check all workspaces                           |
 | `npm run build`     | Build all workspaces                                |
@@ -122,6 +123,7 @@ The same scripts exist inside `apps/api` and `apps/web`, e.g.
 | `city`         | string  | Case-insensitive **contains** match                |
 | `keyword`      | string  | Case-insensitive **contains** match on description |
 | `targetBudget` | number  | `>= 0` — used for ranking                          |
+| `sort`         | string  | One of `recommended`, `price_desc`, `price_asc`, `newest`, `bedrooms_desc`, `bathrooms_desc`, `sqft_desc` (default `recommended`) |
 | `page`         | integer | `>= 1` (default `1`)                               |
 | `pageSize`     | integer | `1..100` (default `10`)                            |
 
@@ -174,6 +176,18 @@ Any parameter may be omitted. Empty values are treated as omitted.
 }
 ```
 
+Listings whose source feed includes photos carry a `photos` array of image
+URLs (see `sample_listings.json`). The sample photos are free Unsplash CDN
+images **matched to each property's size**: a 3-bedroom listing gets family
+home exteriors, a studio gets small apartment shots, etc. The first photo is
+the exterior (or a bedroom interior for ~30% of the listings); the rest are
+interiors. About 20% of listings intentionally have no photos. The pool and
+assignment live in `apps/api/scripts/seed-photos.mjs` (`npm run seed:photos`
+regenerates the JSON, deterministically, from each listing's composite key).
+When `photos` is absent or empty the UI shows the
+branded placeholder image (falling back to a generated, offline-safe
+illustration if that image can't be fetched), so the card layout stays stable.
+
 **Error `400`** — invalid input is rejected deliberately with a clear message:
 
 ```json
@@ -203,7 +217,8 @@ curl "http://localhost:3000/api/listings?city=Springfield&keyword=pets&minBedroo
 ## Web app
 
 `apps/web` is the React 19 UI. It renders a search form, the ranked results for
-the current page, and pagination — calling `GET /api/listings` for real data.
+the current page as property cards with a sort dropdown, and pagination —
+calling `GET /api/listings` for real data.
 
 ### Behaviour
 
@@ -222,9 +237,24 @@ the current page, and pagination — calling `GET /api/listings` for real data.
   while the URL has filters so they can be cleared. (The feature is a *search* —
   the endpoint, results, and URL are named that way — whose inputs are
   *filters*.)
-- **Ranked results:** address, city, price, bedrooms, baths, sqft, and the
-  relevance score returned by the API; results are shown in the order the API
-  ranked them.
+- **Ranked results:** results render as property cards (address, price,
+  beds/baths/sqft, provenance) in a responsive grid. Each card leads with a
+  full-width **landscape photo strip** (above the price), followed by the
+  price/provenance row and a single-line address (street fused with
+  "city, ST ZIP"); the strip has prev/next controls and a position counter
+  when a listing has several photos. Listings without photos (or with a photo
+  that fails to load) fall back to the branded placeholder image and, if even
+  that can't be fetched, a generated offline-safe illustration - so the layout
+  never breaks.
+  The card bottom is reserved **full width** for the duplicate hint. A
+  **sort dropdown** at the
+  top of the results follows the portals' convention: **Recommended** (the API's
+  relevance ranking) by default, plus **Price: High to Low**, **Price: Low to
+  High**, **Newest**, **Bedrooms**, **Bathrooms**, and **Square Feet**. Attribute
+  sorts are high-to-low with missing values always last. The choice lives in the
+  URL (`?sort=price_asc`), survives reloads/back-forward, is preserved when
+  filters change, and resets to page 1. Sorting happens server-side (before
+  pagination), so every page reflects the same global order.
 - **States:** loading, no-results, and error are all rendered distinctly. A
   `400` shows the API's message (and offending field); a `500`/network failure
   shows a retry button.
@@ -310,9 +340,12 @@ deterministic order** so that pagination never duplicates or skips rows.
 ## Duplicate listings
 
 The same property is routinely carried by more than one MLS feed — in
-`sample_listings.json` four of the twelve rows are cross-source duplicates
-(`A1`/`B7`, `A2`/`B8`, `A3`/`B9`, `A5`/`B11`), so **12 rows describe 8 distinct
-homes**.
+`sample_listings.json` ten of the rows are cross-source duplicates in four
+groups (`A1`/`B7`/`C8`, `A2`/`B8`, `A3`/`B9`/`C9`, `A5`/`B11`), where `C8`
+and `C9` are **MLS_C siblings added to two of the original pairs**, so
+**34 rows describe 28 distinct homes**. The three-row groups exercise the
+primary-selection tiebreak: `C8` (2026-09-08) is newest in its group and
+becomes primary over `A1`/`B7`, while `A3` stays primary over `B9`/`C9`.
 
 We deliberately **keep every source row and annotate it** rather than collapsing:
 
@@ -424,7 +457,8 @@ npm test
   tied scores and deterministic ordering.
 - `apps/api/src/lib/dedupe.test.ts` — address normalization, the geocode key, the
   unit guard, the address fallback, and grouping/primary selection over the
-  sample's four duplicate pairs (including the newer-but-pricier `A5`/`B11`).
+  sample's duplicate pairs and the MLS_C three-way groups (including the
+  newer-but-pricier `A5`/`B11` and the primary flip that `C8`/`C9` cause).
 - `apps/api/src/routes/listings.test.ts` — the HTTP layer against an in-memory
   repository: filtering, pagination boundaries, empty results, duplicate
   annotation, `400`s and the `500` path.
@@ -444,8 +478,10 @@ npm test
   negative/non-numeric values, `pageSize` bounds) and form/query conversion.
 - `apps/web/src/api/client.test.ts` — URL building and error mapping for `400`
   (with `field`), `500`, and transport failures.
-- `apps/web/src/App.test.tsx` — the rendered app against MSW: ranked results
-  (address/price/bedrooms/score), the duplicate note + full sibling address and
+- `apps/web/src/App.test.tsx` — the rendered app against MSW: ranked result
+  cards (address/price/bedrooms/locality), the photo carousel (prev/next, wrap,
+  placeholder + dead-image fallback), the sort dropdown (URL + page reset
+  + re-ordering), the duplicate note + full sibling address and
   "most recent" tag, the theme toggle, the collapsible filter panel (toggle +
   active-filter badge), the Apply/Reset actions (including resetting every
   facet), loading, no-results, error + retry, pagination boundaries, filter
@@ -467,10 +503,12 @@ apps/api/
     lib/validation.ts          query parsing/validation (pure)
     lib/scoring.ts             relevance scoring (pure)
     lib/dedupe.ts              cross-source duplicate detection (pure)
-    lib/search.ts              filter -> annotate duplicates -> rank -> paginate
+    lib/search.ts              filter -> annotate duplicates -> rank -> sort -> paginate
+    lib/sorting.ts             sort comparators + whitelist (pure)
     lib/seeding.ts             ingest helpers (idempotent upsert + duplicate audit)
-  schema.sql                   table DDL (composite PK, timestamptz)
-  sample_listings.json         seed data
+  schema.sql                   table DDL (composite PK, timestamptz, photos)
+  sample_listings.json         seed data (34 listings incl. photo URLs)
+  scripts/seed-photos.mjs      regenerates curated per-type photos in the JSON
 apps/web/
   src/
     main.tsx                   app bootstrap + router + QueryClientProvider
@@ -481,8 +519,9 @@ apps/web/
     hooks/useListings.ts       TanStack Query server state
     lib/query.ts               ListingsQuery parse/serialize
     lib/form.ts                form values, validation, conversion
-    lib/format.ts              price/score/address formatting
-    components/                SearchForm, Results, ResultsTable, Pagination, ThemeToggle
+    lib/format.ts              price/address formatting
+    lib/photoPlaceholder.ts    branded placeholder URL + generated offline fallback
+    components/                SearchForm, ListingCards, PhotoCarousel, SortSelect, Results, Pagination, ThemeToggle
   vite.config.ts               React plugin + /api dev proxy + Vitest config
 packages/types/
   src/index.ts                 shared domain + API contract types
@@ -495,7 +534,8 @@ compose.yml                    Postgres 18 service
 | ----------- | ----- |
 | Runnable app, wired end to end | `npm run dev` (API + UI); UI calls `GET /api/listings` |
 | Filtering, ranking, pagination | `apps/api/src/lib/` + `GET /api/listings` |
-| UI inputs + ranked results (address, price, bedrooms, score) | `apps/web/src/components/` |
+| UI inputs + ranked results (address, price, bedrooms, key stats) | `apps/web/src/components/` |
+| Sort dropdown (Recommended/price/sqft/…) in the URL and via the API | `apps/web/src/components/SortSelect.tsx`, `apps/api/src/lib/sorting.ts` |
 | Loading / no-results / error states | `apps/web/src/components/Results.tsx` |
 | Deliberate invalid-input handling | `apps/api/src/lib/validation.ts` (400s), surfaced in the UI |
 | Test suite incl. edge cases | `apps/api/src/**/*.test.ts`, `apps/web/src/**/*.test.ts` |

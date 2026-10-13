@@ -24,6 +24,7 @@ export interface ListingsTable {
   listed_date: Date;
   status: string;
   description: string | null;
+  photos: string[];
 }
 
 export interface Database {

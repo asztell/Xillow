@@ -12,5 +12,6 @@ export type {
   ScoredListing,
   SearchParams,
   SearchResult,
+  SortKey,
   ApiError,
 } from "@xillow/types";

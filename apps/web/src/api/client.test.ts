@@ -17,6 +17,22 @@ describe("buildListingsUrl", () => {
       "https://api.example.com/api/listings?minPrice=1&city=Fairfax&page=2&pageSize=5",
     );
   });
+
+  it("includes the sort parameter when it is not the default", () => {
+    const url = buildListingsUrl(
+      { sort: "price_asc", page: 1, pageSize: 10 },
+      "",
+    );
+    expect(url).toContain("sort=price_asc");
+  });
+
+  it("omits the default sort from the URL", () => {
+    const url = buildListingsUrl(
+      { sort: "recommended", page: 1, pageSize: 10 },
+      "",
+    );
+    expect(url).not.toContain("sort");
+  });
 });
 
 describe("fetchListings", () => {

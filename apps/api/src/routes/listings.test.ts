@@ -199,6 +199,24 @@ describe("GET /api/listings", () => {
     expect(res.body.results[0].bedrooms).toBe(3);
   });
 
+  it("sorts by price ascending when asked", async () => {
+    const app = createApp(new FakeListingRepository(sampleListings()));
+    const res = await request(app).get("/api/listings").query({ sort: "price_asc" });
+
+    expect(res.status).toBe(200);
+    // A1=450k, A2=525k, A3=399k, B7=452k -> cheapest first.
+    const prices: number[] = res.body.results.map((l: { price: number }) => l.price);
+    expect(prices).toEqual([399000, 450000, 452000, 525000]);
+  });
+
+  it("rejects an unknown sort value with 400", async () => {
+    const app = createApp(new FakeListingRepository(sampleListings()));
+    const res = await request(app).get("/api/listings").query({ sort: "popular" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("INVALID_QUERY");
+    expect(res.body.error.field).toBe("sort");
+  });
+
   it("paginates and reports page boundaries", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
 

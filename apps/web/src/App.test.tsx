@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import type { ScoredListing, SearchResult } from "@xillow/types";
 import { renderApp } from "./test/renderApp";
 import { server } from "./test/server";
+import { PLACEHOLDER_IMAGE_URL } from "./lib/photoPlaceholder";
 
 const LISTINGS_URL = "http://localhost/api/listings";
 
@@ -61,16 +62,17 @@ function handleListings(build: (page: number) => SearchResult): URL[] {
 }
 
 describe("App", () => {
-  it("shows a loading state, then renders the required result fields", async () => {
+  it("shows a loading state, then renders the required result fields on cards", async () => {
     handleListings(() => page());
     renderApp();
 
     expect(screen.getByText(/loading listings/i)).toBeInTheDocument();
 
-    const row = await screen.findByRole("row", { name: /123 Main St, Apt 4B/i });
-    expect(within(row).getByText("$450,000")).toBeInTheDocument();
-    expect(within(row).getByText("2")).toBeInTheDocument(); // bedrooms
-    expect(within(row).getByText("0.693")).toBeInTheDocument(); // relevance score
+    const card = await screen.findByRole("article");
+    expect(within(card).getByText("123 Main St, Apt 4B")).toBeInTheDocument();
+    expect(within(card).getByText("$450,000")).toBeInTheDocument();
+    expect(within(card).getByText("2")).toBeInTheDocument(); // bedrooms
+    expect(within(card).getByText("Springfield, VA 22150")).toBeInTheDocument();
   });
 
   it("flags a possible duplicate (with its full address) and labels the primary", async () => {
@@ -98,13 +100,15 @@ describe("App", () => {
     );
     renderApp();
 
-    const row = await screen.findByRole("row", { name: /123 Main St, Apt 4B/i });
-    expect(within(row).getByText(/possible duplicate/i)).toBeInTheDocument();
+    const cards = await screen.findAllByRole("article");
+    expect(cards).toHaveLength(1);
+    const [card] = cards;
+    expect(within(card).getByText(/possible duplicate/i)).toBeInTheDocument();
     expect(
-      within(row).getByText(/123 Main Street, Unit 4B, Springfield, VA 22150/),
+      within(card).getByText(/123 Main Street, Unit 4B, Springfield, VA 22150/),
     ).toBeInTheDocument();
-    expect(within(row).getByText(/MLS_B \$452,000/)).toBeInTheDocument();
-    expect(within(row).getByText(/most recent/i)).toBeInTheDocument();
+    expect(within(card).getByText(/MLS_B \$452,000/)).toBeInTheDocument();
+    expect(within(card).getByText(/most recent/i)).toBeInTheDocument();
   });
 
   it("toggles the theme between light and dark", async () => {
@@ -328,5 +332,147 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: /filters, 2 active/i }),
     ).toBeInTheDocument();
+  });
+
+  it("defaults the sort dropdown to Recommended", async () => {
+    handleListings(() => page());
+    renderApp();
+    await screen.findByText("123 Main St, Apt 4B");
+
+    expect(screen.getByRole("combobox", { name: /sort results/i })).toHaveValue(
+      "recommended",
+    );
+  });
+
+  it("applies a new sort, updating the URL and resetting to page 1", async () => {
+    const requests = handleListings((requestedPage) => page({ page: requestedPage }));
+    renderApp({ initialEntries: ["/?page=2"] });
+    await screen.findByText("123 Main St, Apt 4B");
+
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /sort results/i }),
+      "price_asc",
+    );
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.searchParams.get("sort")).toBe("price_asc"),
+    );
+    expect(requests.at(-1)?.searchParams.get("page")).toBe("1");
+  });
+
+  it("re-orders the cards when a price sort is chosen", async () => {
+    const fixtures = [
+      listing({ id: "A1", address: "123 Main St, Apt 4B", price: 450000 }),
+      listing({ id: "A2", address: "456 Oak Ave", price: 525000 }),
+      listing({ id: "A3", address: "789 Pine Rd", price: 399000 }),
+    ];
+    server.use(
+      http.get(LISTINGS_URL, ({ request }) => {
+        const url = new URL(request.url);
+        const sort = url.searchParams.get("sort");
+        const sorted = [...fixtures].sort((a, b) =>
+          sort === "price_asc" ? a.price - b.price : b.price - a.price,
+        );
+        return HttpResponse.json(
+          page({ total: fixtures.length, totalPages: 1, results: sorted }),
+        );
+      }),
+    );
+    renderApp();
+    await screen.findByText("123 Main St, Apt 4B");
+
+    const addresses = () =>
+      screen
+        .getAllByRole("article")
+        .map((card) => within(card).getByRole("heading").textContent);
+
+    // The stub serves "recommended" as price high to low.
+    expect(addresses()).toEqual([
+      "456 Oak Ave",
+      "123 Main St, Apt 4B",
+      "789 Pine Rd",
+    ]);
+
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /sort results/i }),
+      "price_asc",
+    );
+
+    await waitFor(() =>
+      expect(addresses()).toEqual([
+        "789 Pine Rd",
+        "123 Main St, Apt 4B",
+        "456 Oak Ave",
+      ]),
+    );
+  });
+
+  it("carousels through multiple photos with prev/next controls", async () => {
+    handleListings(() =>
+      page({
+        results: [
+          listing({
+            photos: [
+              "https://picsum.photos/seed/xillow-A1/640/480",
+              "https://picsum.photos/seed/xillow-A2/640/480",
+              "https://picsum.photos/seed/xillow-A3/640/480",
+            ],
+          }),
+        ],
+      }),
+    );
+    renderApp();
+
+    const first = await screen.findByAltText(/photo 1 of 3/i);
+    expect(first).toHaveAttribute(
+      "src",
+      "https://picsum.photos/seed/xillow-A1/640/480",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /next photo/i }));
+    expect(screen.getByAltText(/photo 2 of 3/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /previous photo/i }));
+    expect(screen.getByAltText(/photo 1 of 3/i)).toBeInTheDocument();
+
+    // Wraps around from the last photo back to the first.
+    const next = screen.getByRole("button", { name: /next photo/i });
+    await userEvent.click(next);
+    await userEvent.click(next);
+    await userEvent.click(next);
+    expect(screen.getByAltText(/photo 1 of 3/i)).toBeInTheDocument();
+  });
+
+  it("shows a placeholder when a listing has no photos", async () => {
+    handleListings(() => page()); // listing() carries no photos field
+    renderApp();
+
+    const placeholder = await screen.findByRole("img", {
+      name: /photo placeholder for 123 Main St, Apt 4B, Springfield/i,
+    });
+    expect(placeholder).toBeInTheDocument();
+    // The no-photo slot starts on the branded placeholder image.
+    expect(placeholder.querySelector("img")).toHaveAttribute(
+      "src",
+      PLACEHOLDER_IMAGE_URL,
+    );
+    expect(
+      screen.queryByRole("button", { name: /next photo/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("walks the fallback chain when photos fail to load", async () => {
+    handleListings(() =>
+      page({
+        results: [listing({ photos: ["https://example.com/broken.jpg"] })],
+      }),
+    );
+    renderApp();
+
+    const img = await screen.findByAltText(/123 Main St, Apt 4B, Springfield/i);
+    fireEvent.error(img);
+    expect(img).toHaveAttribute("src", PLACEHOLDER_IMAGE_URL);
+    fireEvent.error(img);
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
   });
 });

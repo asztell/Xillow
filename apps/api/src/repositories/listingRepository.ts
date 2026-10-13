@@ -48,6 +48,7 @@ export class KyselyListingRepository implements ListingRepository {
         sql<Date>`listed_date`.as("listedDate"),
         "status",
         "description",
+        "photos",
       ]);
 
     if (filter.minPrice !== undefined) {

@@ -27,6 +27,8 @@ export interface Listing {
   listedDate: string;
   status: string;
   description: string | null;
+  /** Photo URLs as received from the source system; empty when none exist. */
+  photos?: string[];
 }
 
 /** A sibling row from another source that appears to describe the same property. */
@@ -63,6 +65,16 @@ export interface ScoredListing extends Listing, DuplicateAnnotation {
   score: number;
 }
 
+/** Sort orders supported by the listings API (all others are invalid). */
+export type SortKey =
+  | "recommended"
+  | "price_desc"
+  | "price_asc"
+  | "newest"
+  | "bedrooms_desc"
+  | "bathrooms_desc"
+  | "sqft_desc";
+
 /** Validated, normalized search parameters. */
 export interface SearchParams {
   minPrice?: number;
@@ -71,6 +83,7 @@ export interface SearchParams {
   city?: string;
   keyword?: string;
   targetBudget?: number;
+  sort?: SortKey;
   page: number;
   pageSize: number;
 }

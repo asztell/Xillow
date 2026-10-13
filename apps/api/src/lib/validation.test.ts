@@ -131,4 +131,43 @@ describe("parseSearchParams", () => {
     const result = parseSearchParams({ sortBy: "price", foo: "bar" });
     expect(result.ok).toBe(true);
   });
+
+  it("defaults the sort to undefined (recommended)", () => {
+    const result = parseSearchParams({});
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.params.sort).toBeUndefined();
+  });
+
+  it("accepts every whitelisted sort value", () => {
+    for (const sort of [
+      "recommended",
+      "price_desc",
+      "price_asc",
+      "newest",
+      "bedrooms_desc",
+      "bathrooms_desc",
+      "sqft_desc",
+    ]) {
+      const result = parseSearchParams({ sort });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.params.sort).toBe(sort);
+    }
+  });
+
+  it("rejects an unknown sort value", () => {
+    const result = parseSearchParams({ sort: "popular" });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.field).toBe("sort");
+    expect(result.message).toMatch(/sort must be one of/i);
+  });
+
+  it("rejects a repeated sort parameter", () => {
+    const result = parseSearchParams({ sort: ["price_asc", "newest"] });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.field).toBe("sort");
+  });
 });
