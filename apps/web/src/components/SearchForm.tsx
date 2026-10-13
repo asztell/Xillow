@@ -13,6 +13,8 @@ import {
   type FormErrors,
 } from "../lib/form";
 import type { ListingsQuery } from "../lib/query";
+import { useFilterPanel } from "../hooks/useFilterPanel";
+import { ChevronIcon, FilterIcon } from "./icons";
 
 const FIELDS: FilterField[] = [
   "minPrice",
@@ -42,32 +44,6 @@ const PLACEHOLDERS: Partial<Record<FilterField, string>> = {
   pageSize: "10",
 };
 
-const PANEL_STATE_KEY = "xillow-filters-open";
-const NARROW_QUERY = "(max-width: 640px)";
-
-/** Wide screens get an expanded panel by default; narrow ones start collapsed. */
-function defaultPanelOpen(): boolean {
-  return !(
-    typeof window.matchMedia === "function" &&
-    window.matchMedia(NARROW_QUERY).matches
-  );
-}
-
-/**
- * Panel state on load: an explicit choice the user made before wins; otherwise
- * fall back to the viewport default (open on desktop, collapsed on phones).
- */
-function readPanelOpen(): boolean {
-  try {
-    const stored = window.localStorage.getItem(PANEL_STATE_KEY);
-    if (stored === "open") return true;
-    if (stored === "closed") return false;
-  } catch {
-    // Private mode / storage disabled - fall through to the viewport default.
-  }
-  return defaultPanelOpen();
-}
-
 interface SearchFormProps {
   /** The applied query; used to seed the draft. */
   query: ListingsQuery;
@@ -95,19 +71,7 @@ export function SearchForm({
     formFromQuery(query),
   );
   const [errors, setErrors] = useState<FormErrors>({});
-  const [open, setOpen] = useState<boolean>(readPanelOpen);
-
-  // Persist only on an explicit toggle. The viewport default is re-evaluated on
-  // each load, so it keeps adapting until the user makes a real choice.
-  const toggleOpen = () => {
-    const next = !open;
-    setOpen(next);
-    try {
-      window.localStorage.setItem(PANEL_STATE_KEY, next ? "open" : "closed");
-    } catch {
-      // Private mode / storage disabled - the panel still works this session.
-    }
-  };
+  const { open, toggleOpen } = useFilterPanel();
 
   const activeCount = countActiveFilters(query);
   // Nothing to apply or clear when the draft is empty *and* the URL already has
@@ -217,43 +181,3 @@ export function SearchForm({
   );
 }
 
-/** Funnel/"filters" glyph shown to the left of the toggle label. */
-function FilterIcon() {
-  return (
-    <svg
-      className="filter-toggle-icon"
-      viewBox="0 0 24 24"
-      width="15"
-      height="15"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-    </svg>
-  );
-}
-
-/** Down-pointing chevron on the right that flips up when the panel is open. */
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      className="filter-toggle-chevron"
-      data-open={open}
-      viewBox="0 0 24 24"
-      width="14"
-      height="14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}

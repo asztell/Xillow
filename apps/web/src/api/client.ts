@@ -28,6 +28,46 @@ export function buildListingsUrl(query: ListingsQuery, base: string = API_BASE):
   return `${base}/api/listings${qs ? `?${qs}` : ""}`;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/**
+ * Validates the payload the UI relies on. TypeScript types are erased at
+ * runtime, so a server/version mismatch would otherwise surface as a confusing
+ * crash deep inside a component; this turns it into one clear error at the
+ * trust boundary. Only the discriminants the UI depends on are checked - being
+ * stricter would reject additive server changes for no benefit.
+ */
+function parseSearchResult(payload: unknown): SearchResult {
+  const results = isRecord(payload) ? payload.results : undefined;
+  const shapeOk =
+    isRecord(payload) &&
+    Array.isArray(results) &&
+    results.every(
+      (row) =>
+        isRecord(row) &&
+        typeof row.id === "string" &&
+        typeof row.source === "string" &&
+        typeof row.price === "number",
+    ) &&
+    Number.isInteger(payload.page) &&
+    Number.isInteger(payload.pageSize) &&
+    Number.isInteger(payload.total) &&
+    Number.isInteger(payload.totalPages) &&
+    typeof payload.hasNext === "boolean" &&
+    typeof payload.hasPrev === "boolean";
+
+  if (!shapeOk) {
+    throw new ListingApiError(
+      "The listings service returned an unexpected response.",
+      { code: "INVALID_RESPONSE" },
+    );
+  }
+
+  return payload as unknown as SearchResult;
+}
+
 /**
  * Fetches a page of ranked listings.
  *
@@ -74,5 +114,5 @@ export async function fetchListings(
     throw new ListingApiError(message, { code, status: response.status, field });
   }
 
-  return (await response.json()) as SearchResult;
+  return parseSearchResult(await response.json());
 }

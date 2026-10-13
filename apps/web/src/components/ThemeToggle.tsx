@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { readStored, writeStored } from "../lib/storage";
 
 type Theme = "light" | "dark";
 
 const STORAGE_KEY = "xillow-theme";
 
 function readStoredTheme(): Theme | null {
-  try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === "light" || value === "dark" ? value : null;
-  } catch {
-    return null;
-  }
+  const value = readStored(STORAGE_KEY);
+  return value === "light" || value === "dark" ? value : null;
 }
 
 function systemPrefersDark(): boolean {
@@ -38,11 +35,7 @@ export function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // Private mode / storage disabled - the theme still applies for the session.
-    }
+    writeStored(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggle = useCallback(() => {
