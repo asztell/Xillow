@@ -95,36 +95,66 @@ export function distinctKeyCount(listings: SampleListing[]): number {
 }
 
 /**
+ * Rows per INSERT statement. Batching keeps the seed to a handful of round
+ * trips while staying well clear of Postgres' parameter limit.
+ */
+const UPSERT_CHUNK_SIZE = 500;
+
+/**
+ * Collapses a batch to one row per `(id, source)` key, keeping the last
+ * occurrence. The feed may repeat a key, and a single multi-row INSERT with
+ * `ON CONFLICT DO UPDATE` cannot touch the same conflict target twice (Postgres
+ * raises "cannot affect row a second time"), so collapsing first both preserves
+ * the documented "last value wins" semantics and makes the statement legal.
+ */
+function lastByKey(listings: SampleListing[]): SampleListing[] {
+  const byKey = new Map<string, SampleListing>();
+  for (const listing of listings) {
+    byKey.set(`${listing.id}\u0000${listing.source}`, listing);
+  }
+  return [...byKey.values()];
+}
+
+/** Maps a source record onto the `listings` table's column names. */
+function toRow(listing: SampleListing) {
+  return {
+    id: listing.id,
+    source: listing.source,
+    address: listing.address,
+    city: listing.city,
+    state: listing.state,
+    zip: listing.zip,
+    price: listing.price,
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+    sqft: listing.sqft,
+    latitude: listing.latitude,
+    longitude: listing.longitude,
+    listed_date: new Date(toTimestamp(listing.listedDate)),
+    status: listing.status,
+    description: listing.description,
+    photos: listing.photos ?? [],
+  };
+}
+
+/**
  * Upserts a batch on the composite key `(id, source)`, so re-running is
- * idempotent: existing rows are updated in place and never duplicated. Runs in a
- * single transaction so a partial batch is never left behind.
+ * idempotent: existing rows are updated in place and never duplicated. The
+ * whole batch runs in a single transaction (chunked into multi-row inserts) so
+ * a partial batch is never left behind.
  */
 export async function upsertListings(
   db: Kysely<Database>,
   listings: SampleListing[],
 ): Promise<void> {
+  const rows = lastByKey(listings).map(toRow);
+  if (rows.length === 0) return;
+
   await db.transaction().execute(async (trx) => {
-    for (const listing of listings) {
+    for (let start = 0; start < rows.length; start += UPSERT_CHUNK_SIZE) {
       await trx
         .insertInto("listings")
-        .values({
-          id: listing.id,
-          source: listing.source,
-          address: listing.address,
-          city: listing.city,
-          state: listing.state,
-          zip: listing.zip,
-          price: listing.price,
-          bedrooms: listing.bedrooms,
-          bathrooms: listing.bathrooms,
-          sqft: listing.sqft,
-          latitude: listing.latitude,
-          longitude: listing.longitude,
-          listed_date: new Date(toTimestamp(listing.listedDate)),
-          status: listing.status,
-          description: listing.description,
-          photos: listing.photos ?? [],
-        })
+        .values(rows.slice(start, start + UPSERT_CHUNK_SIZE))
         .onConflict((oc) =>
           oc.columns(["id", "source"]).doUpdateSet((eb) => ({
             address: eb.ref("excluded.address"),

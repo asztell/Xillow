@@ -18,16 +18,23 @@ import { compareScored } from "./scoring";
  *     stable across requests no matter which attribute the user chose.
  */
 
-/** Every accepted `sort` value, mirrored in the web app and the README. */
-export const SORT_KEYS = [
-  "recommended",
-  "price_desc",
-  "price_asc",
-  "newest",
-  "bedrooms_desc",
-  "bathrooms_desc",
-  "sqft_desc",
-] as const satisfies readonly SortKey[];
+/**
+ * Every accepted `sort` value. Declared as an exhaustive record so omitting a
+ * member of the `SortKey` union here is a compile error - the runtime list and
+ * the type can never drift. The web app mirrors this in
+ * `apps/web/src/lib/query.ts` (same `satisfies` guard).
+ */
+const SORT_KEY_SET = {
+  recommended: true,
+  price_desc: true,
+  price_asc: true,
+  newest: true,
+  bedrooms_desc: true,
+  bathrooms_desc: true,
+  sqft_desc: true,
+} satisfies Record<SortKey, true>;
+
+export const SORT_KEYS = Object.keys(SORT_KEY_SET) as SortKey[];
 
 /** Type guard for raw query strings. */
 export function isSortKey(value: string): value is SortKey {
@@ -84,7 +91,5 @@ export function sortListings<T extends SortRow>(listings: T[], sort: SortKey): T
       return sorted.sort((a, b) => compareNullableDesc(a.bathrooms, b.bathrooms) || byIdThenSource(a, b));
     case "sqft_desc":
       return sorted.sort((a, b) => compareNullableDesc(a.sqft, b.sqft) || byIdThenSource(a, b));
-    default:
-      return sorted;
   }
 }

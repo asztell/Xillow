@@ -1,5 +1,5 @@
 import { SearchParams, SortKey } from "../types";
-import { isSortKey } from "./sorting";
+import { SORT_KEYS, isSortKey } from "./sorting";
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 10;
@@ -24,6 +24,9 @@ type RawValue =
   | { kind: "invalid" }
   | { kind: "value"; value: string };
 
+/** Outcome of reading one field: the normalized value or the first failure. */
+type Read<T> = { ok: true; value: T } | { ok: false; failure: ValidationFailure };
+
 /**
  * Normalizes a raw query value. Empty/whitespace-only strings count as absent
  * so that `?city=` behaves the same as omitting the parameter. Repeated
@@ -41,105 +44,109 @@ function readRaw(value: unknown): RawValue {
   return { kind: "invalid" };
 }
 
+function failure(field: string, message: string): ValidationFailure {
+  return { ok: false, code: "INVALID_QUERY", message, field };
+}
+
+function readString(
+  query: Record<string, unknown>,
+  field: string,
+): Read<string | undefined> {
+  const raw = readRaw(query[field]);
+  if (raw.kind === "invalid") {
+    return { ok: false, failure: failure(field, `${field} must be a single value`) };
+  }
+  return { ok: true, value: raw.kind === "value" ? raw.value : undefined };
+}
+
+function readNumber(
+  query: Record<string, unknown>,
+  field: string,
+  opts: { integer?: boolean; min?: number } = {},
+): Read<number | undefined> {
+  const raw = readRaw(query[field]);
+  if (raw.kind === "invalid") {
+    return { ok: false, failure: failure(field, `${field} must be a single value`) };
+  }
+  if (raw.kind === "absent") {
+    return { ok: true, value: undefined };
+  }
+
+  const value = Number(raw.value);
+  if (!Number.isFinite(value)) {
+    return { ok: false, failure: failure(field, `${field} must be a number`) };
+  }
+  if (opts.integer && !Number.isInteger(value)) {
+    return { ok: false, failure: failure(field, `${field} must be an integer`) };
+  }
+  if (opts.min !== undefined && value < opts.min) {
+    return { ok: false, failure: failure(field, `${field} must be >= ${opts.min}`) };
+  }
+  return { ok: true, value };
+}
+
 /**
  * Parses and validates raw query parameters into a `SearchParams` object.
  *
  * Pure and free of framework dependencies so it can be unit tested directly.
- * Returns either normalized params or a structured, human-readable error.
+ * Returns either normalized params or a structured, human-readable error. Each
+ * field is read in order and the first failure short-circuits, so no work is
+ * spent validating fields the caller will never learn about.
  */
 export function parseSearchParams(query: Record<string, unknown>): ParseResult {
-  const errors: Array<{ field: string; message: string }> = [];
+  const minPrice = readNumber(query, "minPrice", { min: 0 });
+  if (!minPrice.ok) return minPrice.failure;
+  const maxPrice = readNumber(query, "maxPrice", { min: 0 });
+  if (!maxPrice.ok) return maxPrice.failure;
+  const minBedrooms = readNumber(query, "minBedrooms", { integer: true, min: 0 });
+  if (!minBedrooms.ok) return minBedrooms.failure;
+  const targetBudget = readNumber(query, "targetBudget", { min: 0 });
+  if (!targetBudget.ok) return targetBudget.failure;
+  const city = readString(query, "city");
+  if (!city.ok) return city.failure;
+  const keyword = readString(query, "keyword");
+  if (!keyword.ok) return keyword.failure;
 
-  const readString = (field: string): string | undefined => {
-    const raw = readRaw(query[field]);
-    if (raw.kind === "invalid") {
-      errors.push({ field, message: `${field} must be a single value` });
-      return undefined;
-    }
-    return raw.kind === "value" ? raw.value : undefined;
-  };
-
-  const readNumber = (
-    field: string,
-    opts: { integer?: boolean; min?: number } = {},
-  ): number | undefined => {
-    const raw = readRaw(query[field]);
-    if (raw.kind === "invalid") {
-      errors.push({ field, message: `${field} must be a single value` });
-      return undefined;
-    }
-    if (raw.kind === "absent") {
-      return undefined;
-    }
-
-    const value = Number(raw.value);
-    if (!Number.isFinite(value)) {
-      errors.push({ field, message: `${field} must be a number` });
-      return undefined;
-    }
-    if (opts.integer && !Number.isInteger(value)) {
-      errors.push({ field, message: `${field} must be an integer` });
-      return undefined;
-    }
-    if (opts.min !== undefined && value < opts.min) {
-      errors.push({ field, message: `${field} must be >= ${opts.min}` });
-      return undefined;
-    }
-    return value;
-  };
-
-  const minPrice = readNumber("minPrice", { min: 0 });
-  const maxPrice = readNumber("maxPrice", { min: 0 });
-  const minBedrooms = readNumber("minBedrooms", { integer: true, min: 0 });
-  const targetBudget = readNumber("targetBudget", { min: 0 });
-  const city = readString("city");
-  const keyword = readString("keyword");
-
-  const rawSort = readString("sort");
+  const rawSort = readString(query, "sort");
+  if (!rawSort.ok) return rawSort.failure;
   let sort: SortKey | undefined;
-  if (rawSort === undefined) {
+  if (rawSort.value === undefined) {
     sort = undefined;
-  } else if (isSortKey(rawSort)) {
-    sort = rawSort;
+  } else if (isSortKey(rawSort.value)) {
+    sort = rawSort.value;
   } else {
-    errors.push({
-      field: "sort",
-      message:
-        "sort must be one of: recommended, price_desc, price_asc, newest, bedrooms_desc, bathrooms_desc, sqft_desc",
-    });
+    return failure("sort", `sort must be one of: ${SORT_KEYS.join(", ")}`);
   }
 
-  const page = readNumber("page", { integer: true, min: 1 }) ?? DEFAULT_PAGE;
+  const page = readNumber(query, "page", { integer: true, min: 1 });
+  if (!page.ok) return page.failure;
 
-  let pageSize = readNumber("pageSize", { integer: true, min: 1 });
-  if (pageSize !== undefined && pageSize > MAX_PAGE_SIZE) {
-    errors.push({
-      field: "pageSize",
-      message: `pageSize must be <= ${MAX_PAGE_SIZE}`,
-    });
-    pageSize = undefined;
-  }
-  pageSize ??= DEFAULT_PAGE_SIZE;
-
-  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
-    errors.push({
-      field: "minPrice",
-      message: "minPrice must be less than or equal to maxPrice",
-    });
+  const pageSize = readNumber(query, "pageSize", { integer: true, min: 1 });
+  if (!pageSize.ok) return pageSize.failure;
+  if (pageSize.value !== undefined && pageSize.value > MAX_PAGE_SIZE) {
+    return failure("pageSize", `pageSize must be <= ${MAX_PAGE_SIZE}`);
   }
 
-  if (errors.length > 0) {
-    const [first] = errors;
-    return {
-      ok: false,
-      code: "INVALID_QUERY",
-      message: first.message,
-      field: first.field,
-    };
+  if (
+    minPrice.value !== undefined &&
+    maxPrice.value !== undefined &&
+    minPrice.value > maxPrice.value
+  ) {
+    return failure("minPrice", "minPrice must be less than or equal to maxPrice");
   }
 
   return {
     ok: true,
-    params: { minPrice, maxPrice, minBedrooms, city, keyword, targetBudget, sort, page, pageSize },
+    params: {
+      minPrice: minPrice.value,
+      maxPrice: maxPrice.value,
+      minBedrooms: minBedrooms.value,
+      city: city.value,
+      keyword: keyword.value,
+      targetBudget: targetBudget.value,
+      sort,
+      page: page.value ?? DEFAULT_PAGE,
+      pageSize: pageSize.value ?? DEFAULT_PAGE_SIZE,
+    },
   };
 }

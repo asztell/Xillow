@@ -1,10 +1,24 @@
 import type { SortKey } from "@xillow/types";
-import { Results } from "./components/Results";
+import { ListingApiError } from "./api/client";
+import { Results, type ResultsError } from "./components/Results";
 import { SearchForm } from "./components/SearchForm";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { useListings } from "./hooks/useListings";
 import { useListingQuery } from "./hooks/useListingQuery";
 import { filtersKey } from "./lib/query";
+
+/**
+ * Maps a thrown error onto the view-facing shape `Results` renders. Keeping the
+ * `instanceof ListingApiError` check here means the presentation component has
+ * no dependency on the API client.
+ */
+function toResultsError(error: Error | null): ResultsError | null {
+  if (!error) return null;
+  return {
+    message: error.message,
+    field: error instanceof ListingApiError ? error.field : undefined,
+  };
+}
 
 export default function App() {
   const [query, setQuery] = useListingQuery();
@@ -46,7 +60,7 @@ export default function App() {
       <Results
         status={status}
         data={listings.data}
-        error={listings.error}
+        error={toResultsError(listings.error)}
         isFetching={listings.isFetching}
         sort={query.sort}
         onSortChange={handleSortChange}

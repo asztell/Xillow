@@ -91,13 +91,14 @@ describe("seed idempotency (integration)", () => {
   });
 
   it("re-running the seed keeps the row count stable and duplicate-free", async (ctx) => {
-    if (!available) {
+    const connectionString = databaseUrl;
+    if (!connectionString || !available) {
       ctx.skip();
       return;
     }
 
     const dbName = `xillow_seed_test_${process.pid}_${Date.now()}`;
-    const create = new Client({ connectionString: databaseUrl });
+    const create = new Client({ connectionString });
     await create.connect();
     try {
       await create.query(`CREATE DATABASE "${dbName}"`);
@@ -106,7 +107,7 @@ describe("seed idempotency (integration)", () => {
     }
 
     const pool = new Pool({
-      connectionString: withDatabase(databaseUrl!, dbName),
+      connectionString: withDatabase(connectionString, dbName),
     });
     const db = createDb(pool);
 
@@ -135,7 +136,7 @@ describe("seed idempotency (integration)", () => {
     } finally {
       await db.destroy();
 
-      const drop = new Client({ connectionString: databaseUrl });
+      const drop = new Client({ connectionString });
       await drop.connect();
       try {
         await drop.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);

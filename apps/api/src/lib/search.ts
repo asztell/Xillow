@@ -39,8 +39,12 @@ export async function searchListings(
   });
 
   // Apply the requested sort before paginating so every page reflects the same
-  // global order. "Recommended" keeps the relevance ranking above.
-  const sorted = sortListings(scored, params.sort ?? "recommended");
+  // global order. "Recommended" (and an absent sort) is already the relevance
+  // order produced above, so re-sorting it would only do the work twice.
+  const sorted =
+    params.sort && params.sort !== "recommended"
+      ? sortListings(scored, params.sort)
+      : scored;
 
   const total = sorted.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / params.pageSize);

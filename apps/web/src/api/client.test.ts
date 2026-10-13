@@ -56,6 +56,20 @@ describe("fetchListings", () => {
     await expect(fetchListings({ page: 1, pageSize: 10 })).resolves.toEqual(body);
   });
 
+  it("rejects a malformed success body at the boundary", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ results: "nope" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(fetchListings({ page: 1, pageSize: 10 })).rejects.toMatchObject({
+      name: "ListingApiError",
+      code: "INVALID_RESPONSE",
+    });
+  });
+
   it("maps a 400 to a ListingApiError carrying the field", async () => {
     const body = {
       error: {

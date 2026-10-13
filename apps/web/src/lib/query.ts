@@ -4,16 +4,22 @@ export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 10;
 export const MAX_PAGE_SIZE = 100;
 
-/** Accepted `sort` values, mirrored from `apps/api/src/lib/sorting.ts`. */
-export const SORT_KEYS = [
-  "recommended",
-  "price_desc",
-  "price_asc",
-  "newest",
-  "bedrooms_desc",
-  "bathrooms_desc",
-  "sqft_desc",
-] as const satisfies readonly SortKey[];
+/**
+ * Accepted `sort` values, mirrored from `apps/api/src/lib/sorting.ts`. Declared
+ * as an exhaustive record so dropping a member of the `SortKey` union here is a
+ * compile error, keeping the runtime list and the type in lockstep.
+ */
+const SORT_KEY_SET = {
+  recommended: true,
+  price_desc: true,
+  price_asc: true,
+  newest: true,
+  bedrooms_desc: true,
+  bathrooms_desc: true,
+  sqft_desc: true,
+} satisfies Record<SortKey, true>;
+
+export const SORT_KEYS = Object.keys(SORT_KEY_SET) as SortKey[];
 
 /** The applied search - the shape stored in the URL and sent to the API. */
 export type ListingsQuery = SearchParams;
