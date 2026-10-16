@@ -163,4 +163,11 @@ describe("sortListings", () => {
     sortListings(rows, "price_asc");
     expect(rows.map((r) => r.id)).toEqual(before);
   });
+
+  it("throws rather than silently returning unsorted rows for an unknown key", () => {
+    const rows = [row({ id: "A1" }), row({ id: "A2" })];
+    expect(() => sortListings(rows, "popular" as SortKey)).toThrow(
+      /unsupported sort key/i,
+    );
+  });
 });

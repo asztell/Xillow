@@ -34,7 +34,9 @@ const SORT_KEY_SET = {
   sqft_desc: true,
 } satisfies Record<SortKey, true>;
 
-export const SORT_KEYS = Object.keys(SORT_KEY_SET) as SortKey[];
+export const SORT_KEYS: readonly SortKey[] = Object.keys(
+  SORT_KEY_SET,
+) as SortKey[];
 
 /** Type guard for raw query strings. */
 export function isSortKey(value: string): value is SortKey {
@@ -52,6 +54,9 @@ interface SortRow {
   score: number;
 }
 
+/** Sentinel that sorts every real value ahead of a missing one. */
+const LOWEST = Number.NEGATIVE_INFINITY;
+
 /** Final tie-break for every attribute sort: `id` asc, then `source` asc. */
 function byIdThenSource(a: { id: string; source: string }, b: { id: string; source: string }): number {
   if (a.id !== b.id) return a.id < b.id ? -1 : 1;
@@ -61,8 +66,8 @@ function byIdThenSource(a: { id: string; source: string }, b: { id: string; sour
 
 /** Missing values behave as -Infinity, so they sort last in a descending run. */
 function compareNullableDesc(a: number | null, b: number | null): number {
-  const av = a ?? Number.NEGATIVE_INFINITY;
-  const bv = b ?? Number.NEGATIVE_INFINITY;
+  const av = a ?? LOWEST;
+  const bv = b ?? LOWEST;
   if (av === bv) return 0;
   return av > bv ? -1 : 1;
 }
@@ -91,5 +96,10 @@ export function sortListings<T extends SortRow>(listings: T[], sort: SortKey): T
       return sorted.sort((a, b) => compareNullableDesc(a.bathrooms, b.bathrooms) || byIdThenSource(a, b));
     case "sqft_desc":
       return sorted.sort((a, b) => compareNullableDesc(a.sqft, b.sqft) || byIdThenSource(a, b));
+    default: {
+      // Compile-time guard: adding a `SortKey` without a case is a type error.
+      const unhandled: never = sort;
+      throw new Error(`Unsupported sort key: ${String(unhandled)}`);
+    }
   }
 }

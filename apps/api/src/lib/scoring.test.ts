@@ -78,6 +78,10 @@ describe("recencyScore", () => {
     const future = new Date(NOW.getTime() + 10 * DAY_MS);
     expect(recencyScore(future, NOW)).toBe(1);
   });
+
+  it("returns 0 for an unparseable listedDate", () => {
+    expect(recencyScore("not-a-date", NOW)).toBe(0);
+  });
 });
 
 describe("scoreListing", () => {

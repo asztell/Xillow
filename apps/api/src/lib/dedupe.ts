@@ -54,6 +54,11 @@ const UNIT_MARKERS = new Set(["apt", "apartment", "unit", "ste", "suite"]);
 /** ~11 m at the equator at 4 decimal places. */
 const GEO_PRECISION = 4;
 
+/** Hoisted so each call reuses the same compiled regexes instead of re-creating them. */
+const NON_TOKEN_CHARS = /[^a-z0-9\s-]/g;
+const WHITESPACE_RUN = /\s+/;
+const LEADING_STREET_NUMBER = /^\d+[a-z]?$/;
+
 export interface NormalizedAddress {
   /** Leading street number, e.g. "123" - null when absent. */
   number: string | null;
@@ -70,13 +75,13 @@ export interface NormalizedAddress {
 export function normalizeAddress(address: string): NormalizedAddress {
   const tokens = address
     .toLowerCase()
-    .replace(/#/g, " unit ") // "#4b" / "# 4b" -> "unit 4b"
-    .replace(/[^a-z0-9\s-]/g, " ") // drop punctuation
-    .split(/\s+/)
+    .replaceAll("#", " unit ") // "#4b" / "# 4b" -> "unit 4b"
+    .replaceAll(NON_TOKEN_CHARS, " ") // drop punctuation
+    .split(WHITESPACE_RUN)
     .filter(Boolean);
 
   let number: string | null = null;
-  if (tokens.length > 0 && /^\d+[a-z]?$/.test(tokens[0])) {
+  if (tokens.length > 0 && LEADING_STREET_NUMBER.test(tokens[0])) {
     number = tokens.shift() ?? null;
   }
 
@@ -115,8 +120,8 @@ export function duplicateKey(listing: Listing): string | null {
 
 /** Newest `listedDate` first; ties broken by (id, source) for determinism. */
 function compareForPrimary(a: Listing, b: Listing): number {
-  const aTime = new Date(a.listedDate).getTime();
-  const bTime = new Date(b.listedDate).getTime();
+  const aTime = Date.parse(a.listedDate);
+  const bTime = Date.parse(b.listedDate);
   if (aTime !== bTime) {
     return bTime - aTime;
   }
@@ -127,6 +132,20 @@ function compareForPrimary(a: Listing, b: Listing): number {
     return a.source < b.source ? -1 : 1;
   }
   return 0;
+}
+
+/**
+ * Picks the group's primary row (the newest, then lowest id, then lowest
+ * source) in a single pass instead of sorting the whole group.
+ */
+function findPrimary<T extends Listing>(members: readonly T[]): T {
+  let primary = members[0];
+  for (let i = 1; i < members.length; i += 1) {
+    if (compareForPrimary(members[i], primary) < 0) {
+      primary = members[i];
+    }
+  }
+  return primary;
 }
 
 function toDuplicateRef(listing: Listing): DuplicateRef {
@@ -178,14 +197,16 @@ export function annotateDuplicates<T extends Listing>(
 
   for (const [, members] of duplicateGroups) {
     const groupId = `dup-${String(++groupNumber).padStart(2, "0")}`;
-    const primary = [...members].sort(compareForPrimary)[0];
+    const primary = findPrimary(members);
 
-    for (const member of members) {
+    // Built once per group instead of once per member: with N members that is
+    // N projections and N lookups rather than N filters plus N projections.
+    const refs = members.map(toDuplicateRef);
+
+    for (const [index, member] of members.entries()) {
       annotations.set(member, {
         duplicateGroupId: groupId,
-        potentialDuplicates: members
-          .filter((other) => other !== member)
-          .map(toDuplicateRef),
+        potentialDuplicates: refs.filter((_, other) => other !== index),
         isPrimary: member === primary,
       });
     }

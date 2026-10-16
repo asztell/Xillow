@@ -30,9 +30,12 @@ export interface SampleListing {
   photos?: string[];
 }
 
+/** Date-only ISO values ("2026-08-29") get pinned to midnight UTC. */
+const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 /** Normalizes an ISO date ("2026-08-29") to a UTC timestamp. */
 export function toTimestamp(value: string): string {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00.000Z` : value;
+  return ISO_DATE_ONLY.test(value) ? `${value}T00:00:00.000Z` : value;
 }
 
 export interface DuplicateKeyWarning {
@@ -47,11 +50,26 @@ export interface DuplicateKeyWarning {
   conflicting: boolean;
 }
 
-/** Order-independent serialization, so key order can't produce false positives. */
+/**
+ * Composite primary key as a single map key. The NUL separator cannot appear
+ * in an id, so the encoding is unambiguous.
+ */
+function listingKey(listing: SampleListing): string {
+  return `${listing.id}\u0000${listing.source}`;
+}
+
+/**
+ * Order-independent serialization, so key order can't produce false positives.
+ *
+ * Keys are compared by code unit rather than with `localeCompare`: the two
+ * records only need the *same* ordering to compare equal, and code-unit
+ * ordering is both cheaper and independent of the host's ICU data.
+ */
 function canonical(listing: SampleListing): string {
-  return JSON.stringify(
-    Object.entries(listing).sort(([a], [b]) => a.localeCompare(b)),
+  const entries = Object.entries(listing).sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0,
   );
+  return JSON.stringify(entries);
 }
 
 /**
@@ -62,28 +80,37 @@ function canonical(listing: SampleListing): string {
  * conflicting repeat) is worth surfacing instead of overwriting in silence.
  */
 export function findDuplicateKeys(listings: SampleListing[]): DuplicateKeyWarning[] {
-  const firstSeen = new Map<string, SampleListing>();
+  // Only the first occurrence of each key is kept, together with its
+  // canonical payload, so repeats are serialized once instead of re-serializing
+  // the first record on every occurrence.
+  const firstSeen = new Map<string, { id: string; source: string; payload: string }>();
   const counts = new Map<string, number>();
   const conflicting = new Set<string>();
 
   for (const listing of listings) {
-    const key = `${listing.id}\u0000${listing.source}`;
+    const key = listingKey(listing);
     counts.set(key, (counts.get(key) ?? 0) + 1);
 
     const first = firstSeen.get(key);
     if (first === undefined) {
-      firstSeen.set(key, listing);
-    } else if (canonical(first) !== canonical(listing)) {
+      firstSeen.set(key, {
+        id: listing.id,
+        source: listing.source,
+        payload: canonical(listing),
+      });
+    } else if (first.payload !== canonical(listing)) {
       conflicting.add(key);
     }
   }
 
-  return [...counts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([key, count]) => {
-      const [id, source] = key.split("\u0000");
-      return { id, source, count, conflicting: conflicting.has(key) };
-    })
+  return [...firstSeen.entries()]
+    .map(([key, first]) => ({
+      id: first.id,
+      source: first.source,
+      count: counts.get(key) ?? 1,
+      conflicting: conflicting.has(key),
+    }))
+    .filter((warning) => warning.count > 1)
     .sort((a, b) =>
       a.id === b.id ? a.source.localeCompare(b.source) : a.id.localeCompare(b.id),
     );
@@ -91,7 +118,7 @@ export function findDuplicateKeys(listings: SampleListing[]): DuplicateKeyWarnin
 
 /** Number of distinct `(id, source)` keys in a batch. */
 export function distinctKeyCount(listings: SampleListing[]): number {
-  return new Set(listings.map((l) => `${l.id}\u0000${l.source}`)).size;
+  return new Set(listings.map(listingKey)).size;
 }
 
 /**
@@ -110,7 +137,7 @@ const UPSERT_CHUNK_SIZE = 500;
 function lastByKey(listings: SampleListing[]): SampleListing[] {
   const byKey = new Map<string, SampleListing>();
   for (const listing of listings) {
-    byKey.set(`${listing.id}\u0000${listing.source}`, listing);
+    byKey.set(listingKey(listing), listing);
   }
   return [...byKey.values()];
 }

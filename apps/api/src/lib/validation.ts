@@ -62,7 +62,7 @@ function readString(
 function readNumber(
   query: Record<string, unknown>,
   field: string,
-  opts: { integer?: boolean; min?: number } = {},
+  opts: { integer?: boolean; min?: number; max?: number } = {},
 ): Read<number | undefined> {
   const raw = readRaw(query[field]);
   if (raw.kind === "invalid") {
@@ -81,6 +81,9 @@ function readNumber(
   }
   if (opts.min !== undefined && value < opts.min) {
     return { ok: false, failure: failure(field, `${field} must be >= ${opts.min}`) };
+  }
+  if (opts.max !== undefined && value > opts.max) {
+    return { ok: false, failure: failure(field, `${field} must be <= ${opts.max}`) };
   }
   return { ok: true, value };
 }
@@ -121,11 +124,12 @@ export function parseSearchParams(query: Record<string, unknown>): ParseResult {
   const page = readNumber(query, "page", { integer: true, min: 1 });
   if (!page.ok) return page.failure;
 
-  const pageSize = readNumber(query, "pageSize", { integer: true, min: 1 });
+  const pageSize = readNumber(query, "pageSize", {
+    integer: true,
+    min: 1,
+    max: MAX_PAGE_SIZE,
+  });
   if (!pageSize.ok) return pageSize.failure;
-  if (pageSize.value !== undefined && pageSize.value > MAX_PAGE_SIZE) {
-    return failure("pageSize", `pageSize must be <= ${MAX_PAGE_SIZE}`);
-  }
 
   if (
     minPrice.value !== undefined &&
