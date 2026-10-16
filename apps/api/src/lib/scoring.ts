@@ -54,8 +54,10 @@ export function recencyScore(
   now: Date,
   tauDays: number = DEFAULT_RECENCY_TAU_DAYS,
 ): number {
-  const listed = listedDate instanceof Date ? listedDate : new Date(listedDate);
-  const listedMs = listed.getTime();
+  // `Date.parse` avoids allocating a `Date` per row on the scoring hot path; it
+  // returns NaN for an unparseable value, which the guard below turns into 0.
+  const listedMs =
+    typeof listedDate === "string" ? Date.parse(listedDate) : listedDate.getTime();
   if (!Number.isFinite(listedMs)) {
     return 0;
   }

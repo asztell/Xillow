@@ -229,6 +229,27 @@ describe("annotateDuplicates", () => {
     expect(ids.has(null)).toBe(false);
   });
 
+  it("links every member of a group of three and marks only the newest primary", () => {
+    const group = annotateDuplicates([
+      listing({ id: "A1", listedDate: "2026-08-01T00:00:00.000Z" }),
+      listing({ id: "B7", source: "MLS_B", listedDate: "2026-09-03T00:00:00.000Z" }),
+      listing({ id: "C2", source: "MLS_C", listedDate: "2026-08-20T00:00:00.000Z" }),
+    ]);
+    const byId = new Map(group.map((row) => [row.id, row]));
+
+    expect(byId.get("B7")!.isPrimary).toBe(true);
+    expect(byId.get("A1")!.isPrimary).toBe(false);
+    expect(byId.get("C2")!.isPrimary).toBe(false);
+
+    // Each row points at the other two, and never at itself.
+    for (const [id, row] of byId) {
+      expect(row.potentialDuplicates.map((other) => other.id).sort()).toEqual(
+        [...byId.keys()].filter((other) => other !== id).sort(),
+      );
+    }
+    expect(new Set([...byId.values()].map((r) => r.duplicateGroupId)).size).toBe(1);
+  });
+
   it("leaves non-duplicates unannotated", () => {
     const rows = annotated();
     for (const id of ["A4", "B10"]) {
