@@ -1,6 +1,6 @@
 import { SearchParams, SearchResult } from "../types";
 import { ListingRepository } from "../repositories/listingRepository";
-import { annotateDuplicates } from "./dedupe";
+import { annotateDuplicates, duplicateKey } from "./dedupe";
 import { rankListings } from "./scoring";
 import { sortListings } from "./sorting";
 
@@ -15,6 +15,10 @@ export interface SearchOptions {
  *
  * Ranking is done in application code (rather than SQL) so the scoring rules
  * stay in one easily testable place. See README for the trade-off at scale.
+ *
+ * Duplicate grouping uses the pre-materialized `dup_key` stored on each row
+ * (computed at ingest) when available, falling back to recomputing it via
+ * `duplicateKey()` for rows that lack one.
  */
 export async function searchListings(
   repo: ListingRepository,
@@ -31,7 +35,10 @@ export async function searchListings(
 
   // Duplicates are annotated, not removed: every source row is ranked and
   // returned, and `total` keeps counting raw rows.
-  const annotated = annotateDuplicates(listings);
+  const annotated = annotateDuplicates(
+    listings,
+    (listing) => listing.dup_key ?? duplicateKey(listing) ?? null,
+  );
 
   const scored = rankListings(annotated, {
     targetBudget: params.targetBudget,

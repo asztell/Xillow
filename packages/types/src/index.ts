@@ -29,6 +29,8 @@ export interface Listing {
   description: string | null;
   /** Photo URLs as received from the source system; empty when none exist. */
   photos?: string[];
+  /** Pre-computed duplicate-group key, materialized at ingest. */
+  dup_key?: string | null;
 }
 
 /** A sibling row from another source that appears to describe the same property. */

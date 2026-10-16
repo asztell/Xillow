@@ -166,15 +166,20 @@ function toDuplicateRef(listing: Listing): DuplicateRef {
  * that group, and whether it is the group's primary (newest) row. Rows without a
  * suspected duplicate get `{ duplicateGroupId: null, potentialDuplicates: [], isPrimary: false }`.
  *
+ * By default the duplicate key is computed with `duplicateKey()`. Pass a custom
+ * `keyOf` extractor (e.g. to use a pre-materialized `dup_key` stored on the row)
+ * to group by an already-computed key instead.
+ *
  * Pure and non-mutating: the input objects are not changed, so it never affects
  * filtering, ranking or pagination.
  */
 export function annotateDuplicates<T extends Listing>(
   listings: T[],
+  keyOf: (listing: T) => string | null = duplicateKey,
 ): (T & DuplicateAnnotation)[] {
   const groups = new Map<string, T[]>();
   for (const listing of listings) {
-    const key = duplicateKey(listing);
+    const key = keyOf(listing);
     if (key === null) {
       continue;
     }
