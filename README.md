@@ -400,10 +400,11 @@ so `listedDate` is the documented proxy.
 
 ### Trade-offs
 
-- Detection runs over the **filtered** result set, so a filter that excludes one
-  sibling (e.g. `maxPrice=451000` drops `B7`) suppresses the note on the survivor.
-  Materializing a `dup_key` at ingest would remove that caveat and scale better —
-  the same detection function would drive it.
+- `dup_key` is materialized at ingest (computed once by `duplicateKey()` and
+  stored on the row) and refreshed on every upsert, so filtering can no longer
+  suppress a duplicate note on a surviving sibling. A standalone
+  `npm run backfill:dup-key` command backfills existing rows and can be run in
+  `--audit-only` mode to surface missing or stale keys without writing.
 - Grouping uses a quantized geocode key (O(n)); a Haversine ≤ 50 m union-find is
   the scale-grade version that avoids grid-boundary edge effects.
 

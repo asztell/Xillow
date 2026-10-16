@@ -49,6 +49,8 @@ export class KyselyListingRepository implements ListingRepository {
         "status",
         "description",
         "photos",
+        "photos",
+        "dup_key",
       ]);
 
     if (filter.minPrice !== undefined) {
@@ -76,6 +78,7 @@ export class KyselyListingRepository implements ListingRepository {
     return rows.map((row) => ({
       ...row,
       listedDate: row.listedDate.toISOString(),
+      dup_key: row.dup_key ?? null,
     }));
   }
 }

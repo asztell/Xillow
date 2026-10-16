@@ -1,5 +1,7 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../db";
+import type { Listing } from "../types";
+import { duplicateKey } from "./dedupe";
 
 /**
  * Ingest helpers shared by the seed CLI and the seed tests.
@@ -161,6 +163,7 @@ function toRow(listing: SampleListing) {
     status: listing.status,
     description: listing.description,
     photos: listing.photos ?? [],
+    dup_key: duplicateKey(listing as Listing),
   };
 }
 
@@ -198,6 +201,7 @@ export async function upsertListings(
             status: eb.ref("excluded.status"),
             description: eb.ref("excluded.description"),
             photos: eb.ref("excluded.photos"),
+            dup_key: eb.ref("excluded.dup_key"),
           })),
         )
         .execute();

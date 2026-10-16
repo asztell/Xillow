@@ -21,14 +21,18 @@ CREATE TABLE IF NOT EXISTS listings (
   status      TEXT NOT NULL,
   description TEXT,
   photos      TEXT[] NOT NULL DEFAULT '{}',
+  dup_key     TEXT,
   PRIMARY KEY (id, source)
 );
 
 -- Bring tables created before `photos` existed up to date (CREATE TABLE IF NOT
 -- EXISTS is a no-op for them, so the new column has to be added explicitly).
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS photos TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS dup_key TEXT;
 
 -- Supports the price-range filter and the default ordering.
 CREATE INDEX IF NOT EXISTS idx_listings_price ON listings (price);
 -- Supports the city filter.
 CREATE INDEX IF NOT EXISTS idx_listings_city ON listings (city);
+-- Supports duplicate-group lookups by pre-materialized key.
+CREATE INDEX IF NOT EXISTS idx_listings_dup_key ON listings (dup_key);

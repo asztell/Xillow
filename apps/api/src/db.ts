@@ -25,6 +25,7 @@ export interface ListingsTable {
   status: string;
   description: string | null;
   photos: string[];
+  dup_key: string | null;
 }
 
 export interface Database {

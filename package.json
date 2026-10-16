@@ -23,7 +23,8 @@
     "docker:up:detached": "docker compose up --build -d",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "backfill:dup-key": "dotenv -e .env.local -e .env -- tsx apps/api/src/backfill-dup-key.ts"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"
