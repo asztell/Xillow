@@ -2,9 +2,14 @@ import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import {
   parseListingsQuery,
-  toSearchParams,
+  toUrlSearchParams,
   type ListingsQuery,
 } from "../lib/query";
+
+/** Options mirroring React Router's `setSearchParams` (notably `replace`). */
+export interface SetQueryOptions {
+  replace?: boolean;
+}
 
 /**
  * Keeps the applied search in the URL query string.
@@ -16,7 +21,7 @@ import {
  */
 export function useListingQuery(): [
   ListingsQuery,
-  (next: ListingsQuery) => void,
+  (next: ListingsQuery, options?: SetQueryOptions) => void,
 ] {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -28,7 +33,8 @@ export function useListingQuery(): [
   );
 
   const setQuery = useCallback(
-    (next: ListingsQuery) => setSearchParams(toSearchParams(next)),
+    (next: ListingsQuery, options?: SetQueryOptions) =>
+      setSearchParams(toUrlSearchParams(next), options),
     [setSearchParams],
   );
 

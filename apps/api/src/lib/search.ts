@@ -1,6 +1,5 @@
 import { SearchParams, SearchResult } from "../types";
 import { ListingRepository } from "../repositories/listingRepository";
-import { annotateDuplicates, duplicateKey } from "./dedupe";
 import { rankListings } from "./scoring";
 import { sortListings } from "./sorting";
 
@@ -10,15 +9,17 @@ export interface SearchOptions {
 }
 
 /**
- * Runs a search: filters via the repository, annotates likely duplicates, ranks
- * the matches by relevance, then slices out the requested page.
+ * Runs a search: the repository returns the newest listing of each duplicate
+ * group (already filtered to the requested criteria), which is then ranked by
+ * relevance and sliced into the requested page.
+ *
+ * Because the representative is chosen *before* filtering, a filter applies to
+ * the property's most recent listing: a price range that excludes the newest
+ * sibling hides the property entirely rather than surfacing an older one, and
+ * `total` counts the deduplicated properties shown.
  *
  * Ranking is done in application code (rather than SQL) so the scoring rules
  * stay in one easily testable place. See README for the trade-off at scale.
- *
- * Duplicate grouping uses the pre-materialized `dup_key` stored on each row
- * (computed at ingest) when available, falling back to recomputing it via
- * `duplicateKey()` for rows that lack one.
  */
 export async function searchListings(
   repo: ListingRepository,
@@ -33,14 +34,7 @@ export async function searchListings(
     keyword: params.keyword,
   });
 
-  // Duplicates are annotated, not removed: every source row is ranked and
-  // returned, and `total` keeps counting raw rows.
-  const annotated = annotateDuplicates(
-    listings,
-    (listing) => listing.dup_key ?? duplicateKey(listing) ?? null,
-  );
-
-  const scored = rankListings(annotated, {
+  const scored = rankListings(listings, {
     targetBudget: params.targetBudget,
     now: options.now,
   });

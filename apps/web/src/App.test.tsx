@@ -27,9 +27,6 @@ function listing(overrides: Partial<ScoredListing> = {}): ScoredListing {
     status: "active",
     description: "Bright condo near transit",
     score: 0.693,
-    duplicateGroupId: null,
-    potentialDuplicates: [],
-    isPrimary: false,
     ...overrides,
   };
 }
@@ -75,40 +72,19 @@ describe("App", () => {
     expect(within(card).getByText("Springfield, VA 22150")).toBeInTheDocument();
   });
 
-  it("flags a possible duplicate (with its full address) and labels the primary", async () => {
+  it("renders one card per result with no duplicate bookkeeping", async () => {
     handleListings(() =>
       page({
-        results: [
-          listing({
-            duplicateGroupId: "dup-01",
-            isPrimary: true,
-            potentialDuplicates: [
-              {
-                id: "B7",
-                source: "MLS_B",
-                address: "123 Main Street, Unit 4B",
-                city: "Springfield",
-                state: "VA",
-                zip: "22150",
-                price: 452000,
-                listedDate: "2026-08-27T00:00:00.000Z",
-              },
-            ],
-          }),
-        ],
+        total: 2,
+        results: [listing({ id: "A1" }), listing({ id: "A2", address: "456 Oak Ave" })],
       }),
     );
     renderApp();
 
     const cards = await screen.findAllByRole("article");
-    expect(cards).toHaveLength(1);
-    const [card] = cards;
-    expect(within(card).getByText(/possible duplicate/i)).toBeInTheDocument();
-    expect(
-      within(card).getByText(/123 Main Street, Unit 4B, Springfield, VA 22150/),
-    ).toBeInTheDocument();
-    expect(within(card).getByText(/MLS_B \$452,000/)).toBeInTheDocument();
-    expect(within(card).getByText(/most recent/i)).toBeInTheDocument();
+    expect(cards).toHaveLength(2);
+    // The API returns one row per property; the card shows no duplicate hint.
+    expect(screen.queryByText(/possible duplicate/i)).not.toBeInTheDocument();
   });
 
   it("toggles the theme between light and dark", async () => {

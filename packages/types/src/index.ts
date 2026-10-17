@@ -33,8 +33,13 @@ export interface Listing {
   dup_key?: string | null;
 }
 
-/** A sibling row from another source that appears to describe the same property. */
-export interface DuplicateRef {
+/** A listing annotated with its relevance score. */
+export interface ScoredListing extends Listing {
+  score: number;
+}
+
+/** One feed row of a property, used by the detail view's provenance panel. */
+export interface ListingSource {
   id: string;
   source: string;
   address: string;
@@ -44,27 +49,18 @@ export interface DuplicateRef {
   price: number;
   /** ISO-8601 timestamp. */
   listedDate: string;
+  status: string;
+  /** True for the newest row - the one the search results show. */
+  isCurrent: boolean;
 }
 
 /**
- * Duplicate suspicion attached to a listing.
- *
- * We deliberately keep every source row in the result set (no collapsing): the
- * same home carried by two MLS feeds shows up twice, each annotated so the UI
- * can flag it. `total` therefore counts raw rows, not distinct properties.
+ * Response body for `GET /api/listings/:source/:id`: the requested row plus
+ * every feed row that describes the same property (newest first), so the UI can
+ * show where the listing came from. `sources` always includes the requested row.
  */
-export interface DuplicateAnnotation {
-  /** Stable id shared by every row in a suspected group; null when unique. */
-  duplicateGroupId: string | null;
-  /** The other rows that appear to describe the same property. */
-  potentialDuplicates: DuplicateRef[];
-  /** True for the newest `listedDate` in a group of two or more. */
-  isPrimary: boolean;
-}
-
-/** A listing annotated with its relevance score and duplicate suspicion. */
-export interface ScoredListing extends Listing, DuplicateAnnotation {
-  score: number;
+export interface ListingDetail extends Listing {
+  sources: ListingSource[];
 }
 
 /** Sort orders supported by the listings API (all others are invalid). */

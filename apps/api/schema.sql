@@ -34,5 +34,7 @@ ALTER TABLE listings ADD COLUMN IF NOT EXISTS dup_key TEXT;
 CREATE INDEX IF NOT EXISTS idx_listings_price ON listings (price);
 -- Supports the city filter.
 CREATE INDEX IF NOT EXISTS idx_listings_city ON listings (city);
--- Supports duplicate-group lookups by pre-materialized key.
-CREATE INDEX IF NOT EXISTS idx_listings_dup_key ON listings (dup_key);
+-- Supports duplicate-group lookups and picking each group's newest row (the
+-- correlated NOT EXISTS in KyselyListingRepository.find).
+CREATE INDEX IF NOT EXISTS idx_listings_dup_key
+  ON listings (dup_key, listed_date DESC, id, source);
