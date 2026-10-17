@@ -9,6 +9,9 @@ import { searchListings } from "../lib/search";
  *
  * Query params: minPrice, maxPrice, minBedrooms, city, keyword, targetBudget,
  * page, pageSize.
+ *
+ * `GET /listings/:source/:id` - one listing plus its cross-source siblings, for
+ * the detail view. `source` and `id` form the composite primary key.
  */
 export function createListingsRouter(repo: ListingRepository): Router {
   const router = Router();
@@ -37,6 +40,34 @@ export function createListingsRouter(repo: ListingRepository): Router {
         error: {
           code: "INTERNAL_ERROR",
           message: "Unable to search listings right now.",
+        },
+      };
+      res.status(500).json(body);
+    }
+  });
+
+  router.get("/:source/:id", async (req: Request, res: Response) => {
+    const source = String(req.params.source ?? "");
+    const id = String(req.params.id ?? "");
+
+    try {
+      const detail = await repo.findDetail(id, source);
+
+      if (!detail) {
+        const body: ApiError = {
+          error: { code: "NOT_FOUND", message: "Listing not found." },
+        };
+        res.status(404).json(body);
+        return;
+      }
+
+      res.json(detail);
+    } catch (err) {
+      console.error("GET /listings/:source/:id failed:", err);
+      const body: ApiError = {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Unable to load the listing right now.",
         },
       };
       res.status(500).json(body);

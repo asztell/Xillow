@@ -1,5 +1,8 @@
 import type { SortKey } from "@xillow/types";
+import { useCallback } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { ListingApiError } from "./api/client";
+import { ListingDetailModal } from "./components/ListingDetailModal";
 import { Results, type ResultsError } from "./components/Results";
 import { SearchForm } from "./components/SearchForm";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -23,6 +26,8 @@ function toResultsError(error: Error | null): ResultsError | null {
 export default function App() {
   const [query, setQuery] = useListingQuery();
   const listings = useListings(query);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const status = listings.isPending
     ? "loading"
@@ -35,6 +40,30 @@ export default function App() {
   // Changing the sort is a new search: land on the first page.
   const handleSortChange = (sort: SortKey) =>
     setQuery({ ...query, sort, page: 1 });
+
+  // The detail modal lives in the URL (`listingSource`/`listingId`) so it is
+  // shareable and back-button friendly, and the grid stays mounted behind it.
+  const detail = query.detail ?? null;
+
+  const openDetail = useCallback(
+    (source: string, id: string) =>
+      // Push from the grid so Back closes the modal; replace when switching to
+      // a sibling listing inside it, so one modal session is one history entry.
+      setQuery(
+        { ...query, detail: { source, id } },
+        { replace: query.detail !== undefined },
+      ),
+    [query, setQuery],
+  );
+
+  const closeDetail = useCallback(() => {
+    if (location.key === "default") {
+      // Deep link: there is no in-app entry to go back to, so clear the param.
+      setQuery({ ...query, detail: undefined }, { replace: true });
+    } else {
+      navigate(-1);
+    }
+  }, [location.key, navigate, query, setQuery]);
 
   return (
     <div className="app">
@@ -66,7 +95,17 @@ export default function App() {
         onSortChange={handleSortChange}
         onRetry={() => void listings.refetch()}
         onPageChange={(page) => setQuery({ ...query, page })}
+        onSelect={openDetail}
       />
+
+      {detail && (
+        <ListingDetailModal
+          source={detail.source}
+          id={detail.id}
+          onSelect={openDetail}
+          onClose={closeDetail}
+        />
+      )}
     </div>
   );
 }

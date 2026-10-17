@@ -1,5 +1,5 @@
 import type { ScoredListing } from "@xillow/types";
-import { formatFullAddress, formatPrice } from "../lib/format";
+import { formatPrice } from "../lib/format";
 import { PhotoCarousel } from "./PhotoCarousel";
 
 const DASH = "—";
@@ -13,14 +13,19 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+interface ListingCardsProps {
+  listings: ScoredListing[];
+  /** Opens the detail overlay for a listing, keyed by its `(source, id)` pair. */
+  onSelect: (source: string, id: string) => void;
+}
+
 /**
  * Property cards - the industry-standard way to show listings. Each card is an
  * `<article>` that leads with a full-width landscape photo strip, then a
  * price/provenance row, a single-line address (street fused with city, state
- * and zip), the key stats, and - reserved full width at the bottom - the
- * duplicate hint.
+ * and zip), and the key stats. The address opens the detail overlay.
  */
-export function ListingCards({ listings }: { listings: ScoredListing[] }) {
+export function ListingCards({ listings, onSelect }: ListingCardsProps) {
   return (
     <div className="listing-grid" aria-label="Listings">
       {listings.map((listing) => (
@@ -38,13 +43,20 @@ export function ListingCards({ listings }: { listings: ScoredListing[] }) {
               {listing.status !== "active" && (
                 <span className="status-tag">{listing.status}</span>
               )}
-              {listing.isPrimary && <span className="primary-tag">most recent</span>}
               <span className="source-tag">{listing.source}</span>
             </span>
           </div>
 
           <div className="listing-address-line">
-            <h3 className="listing-address">{listing.address}</h3>
+            <h3 className="listing-address">
+              <button
+                type="button"
+                className="listing-address-link"
+                onClick={() => onSelect(listing.source, listing.id)}
+              >
+                {listing.address}
+              </button>
+            </h3>
             <span className="listing-locality">
               {listing.city}, {listing.state} {listing.zip}
             </span>
@@ -64,18 +76,6 @@ export function ListingCards({ listings }: { listings: ScoredListing[] }) {
               value={listing.sqft === null ? DASH : listing.sqft.toLocaleString()}
             />
           </div>
-
-          {listing.potentialDuplicates.length > 0 && (
-            <p className="duplicate-note">
-              Possible duplicate of{" "}
-              {listing.potentialDuplicates
-                .map(
-                  (dup) =>
-                    `${formatFullAddress(dup)} (${dup.source} ${formatPrice(dup.price)})`,
-                )
-                .join("; ")}
-            </p>
-          )}
         </article>
       ))}
     </div>

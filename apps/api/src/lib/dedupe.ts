@@ -1,13 +1,16 @@
-import type { DuplicateAnnotation, DuplicateRef, Listing } from "../types";
+import type { Listing } from "../types";
 
 /**
- * Cross-source duplicate detection
- * --------------------------------
+ * Cross-source duplicate keys
+ * ---------------------------
  * The same physical property is routinely carried by more than one MLS feed
  * (e.g. "A1" on MLS_A and "B7" on MLS_B) with slightly different address
- * strings, prices and dates. We do not merge those rows - every source row is
- * still returned and `total` still counts raw rows - we only *annotate* them so
- * the UI can flag a likely duplicate.
+ * strings, prices and dates. `duplicateKey()` reduces a row to a key for the
+ * underlying property. It is materialized on the `dup_key` column at ingest (see
+ * `lib/seeding.ts`), so a search can return one row per property *in SQL* -
+ * before any filter is applied - via `KyselyListingRepository.find`, without
+ * recomputing the key per query. Rows without a `dup_key` are treated as unique
+ * (run `npm run backfill:dup-key` to populate legacy rows).
  *
  * Signals used, strongest first:
  *
@@ -22,10 +25,6 @@ import type { DuplicateAnnotation, DuplicateRef, Listing } from "../types";
  *
  * The unit guard is what keeps geo-only matching honest: `123 Main St, Apt 4B`
  * and `123 Main St, Apt 5C` share a geocode but are distinct homes.
- *
- * Limitation: grouping runs over the *filtered* result set, so a filter that
- * excludes one sibling suppresses the note on the survivor. A `dup_key` column
- * materialized at ingest would remove that caveat at scale.
  */
 
 /** Street-type tokens normalized to a single canonical spelling. */
@@ -116,113 +115,4 @@ export function duplicateKey(listing: Listing): string | null {
     return null;
   }
   return `addr:${listing.city.toLowerCase()}:${number}:${street}:${unit ?? ""}`;
-}
-
-/** Newest `listedDate` first; ties broken by (id, source) for determinism. */
-function compareForPrimary(a: Listing, b: Listing): number {
-  const aTime = Date.parse(a.listedDate);
-  const bTime = Date.parse(b.listedDate);
-  if (aTime !== bTime) {
-    return bTime - aTime;
-  }
-  if (a.id !== b.id) {
-    return a.id < b.id ? -1 : 1;
-  }
-  if (a.source !== b.source) {
-    return a.source < b.source ? -1 : 1;
-  }
-  return 0;
-}
-
-/**
- * Picks the group's primary row (the newest, then lowest id, then lowest
- * source) in a single pass instead of sorting the whole group.
- */
-function findPrimary<T extends Listing>(members: readonly T[]): T {
-  let primary = members[0];
-  for (let i = 1; i < members.length; i += 1) {
-    if (compareForPrimary(members[i], primary) < 0) {
-      primary = members[i];
-    }
-  }
-  return primary;
-}
-
-function toDuplicateRef(listing: Listing): DuplicateRef {
-  return {
-    id: listing.id,
-    source: listing.source,
-    address: listing.address,
-    city: listing.city,
-    state: listing.state,
-    zip: listing.zip,
-    price: listing.price,
-    listedDate: listing.listedDate,
-  };
-}
-
-/**
- * Returns each listing annotated with its duplicate group, the other members of
- * that group, and whether it is the group's primary (newest) row. Rows without a
- * suspected duplicate get `{ duplicateGroupId: null, potentialDuplicates: [], isPrimary: false }`.
- *
- * By default the duplicate key is computed with `duplicateKey()`. Pass a custom
- * `keyOf` extractor (e.g. to use a pre-materialized `dup_key` stored on the row)
- * to group by an already-computed key instead.
- *
- * Pure and non-mutating: the input objects are not changed, so it never affects
- * filtering, ranking or pagination.
- */
-export function annotateDuplicates<T extends Listing>(
-  listings: T[],
-  keyOf: (listing: T) => string | null = duplicateKey,
-): (T & DuplicateAnnotation)[] {
-  const groups = new Map<string, T[]>();
-  for (const listing of listings) {
-    const key = keyOf(listing);
-    if (key === null) {
-      continue;
-    }
-    const members = groups.get(key);
-    if (members) {
-      members.push(listing);
-    } else {
-      groups.set(key, [listing]);
-    }
-  }
-
-  const annotations = new Map<T, DuplicateAnnotation>();
-  let groupNumber = 0;
-
-  // Iterate keys in a deterministic order so a given set of groups always gets
-  // the same ids (the repository's row order is not guaranteed).
-  const duplicateGroups = [...groups.entries()]
-    .filter(([, members]) => members.length >= 2)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-
-  for (const [, members] of duplicateGroups) {
-    const groupId = `dup-${String(++groupNumber).padStart(2, "0")}`;
-    const primary = findPrimary(members);
-
-    // Built once per group instead of once per member: with N members that is
-    // N projections and N lookups rather than N filters plus N projections.
-    const refs = members.map(toDuplicateRef);
-
-    for (const [index, member] of members.entries()) {
-      annotations.set(member, {
-        duplicateGroupId: groupId,
-        potentialDuplicates: refs.filter((_, other) => other !== index),
-        isPrimary: member === primary,
-      });
-    }
-  }
-
-  return listings.map((listing) => ({
-    ...listing,
-    ...(annotations.get(listing) ?? {
-      duplicateGroupId: null,
-      potentialDuplicates: [],
-      isPrimary: false,
-    }),
-  }));
 }

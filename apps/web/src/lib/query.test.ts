@@ -4,6 +4,7 @@ import {
   filtersKey,
   parseListingsQuery,
   toSearchParams,
+  toUrlSearchParams,
 } from "./query";
 
 describe("parseListingsQuery", () => {
@@ -109,5 +110,57 @@ describe("filtersKey", () => {
     expect(filtersKey({ city: "Reston", page: 1, pageSize: 10 })).toBe(
       filtersKey({ city: "Reston", sort: "price_asc", page: 2, pageSize: 10 }),
     );
+  });
+
+  it("ignores the detail selection so the form does not reset when the modal opens", () => {
+    expect(filtersKey({ city: "Reston", page: 1, pageSize: 10 })).toBe(
+      filtersKey({
+        city: "Reston",
+        page: 1,
+        pageSize: 10,
+        detail: { source: "MLS_A", id: "A1" },
+      }),
+    );
+  });
+});
+
+describe("detail selection", () => {
+  it("reads listingSource + listingId into a detail ref", () => {
+    const query = parseListingsQuery(
+      new URLSearchParams(
+        "listingSource=MLS_A&listingId=A1&page=2&pageSize=10",
+      ),
+    );
+    expect(query.detail).toEqual({ source: "MLS_A", id: "A1" });
+  });
+
+  it("ignores a partial selection rather than opening a half-formed ref", () => {
+    expect(
+      parseListingsQuery(new URLSearchParams("listingSource=MLS_A")).detail,
+    ).toBeUndefined();
+    expect(
+      parseListingsQuery(new URLSearchParams("listingId=A1")).detail,
+    ).toBeUndefined();
+  });
+
+  it("keeps detail out of the search params the API receives", () => {
+    const params = toSearchParams({
+      page: 1,
+      pageSize: 10,
+      detail: { source: "MLS_A", id: "A1" },
+    });
+    expect(params.has("listingSource")).toBe(false);
+    expect(params.has("listingId")).toBe(false);
+    expect(params.toString()).toBe("page=1&pageSize=10");
+  });
+
+  it("carries detail in the URL params and round-trips through parse", () => {
+    const query = {
+      page: 2,
+      pageSize: 10,
+      city: "Reston",
+      detail: { source: "MLS_B", id: "B7" },
+    };
+    expect(parseListingsQuery(toUrlSearchParams(query))).toEqual(query);
   });
 });

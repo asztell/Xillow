@@ -1,13 +1,19 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { createApp } from "../app";
-import { Listing } from "../types";
+import { Listing, ListingDetail, ListingSource } from "../types";
+import { duplicateKey } from "../lib/dedupe";
 import {
   ListingFilter,
   ListingRepository,
 } from "../repositories/listingRepository";
 
-/** In-memory repository so the API tests need no database. */
+/**
+ * In-memory repository so the API tests need no database. Mirrors
+ * `KyselyListingRepository`: it returns the newest row of each duplicate group
+ * (ties by id, then source) chosen *before* the filter is applied. Fixtures omit
+ * `dup_key`, so it is computed on the fly the way ingest would.
+ */
 class FakeListingRepository implements ListingRepository {
   lastFilter?: ListingFilter;
 
@@ -15,12 +21,91 @@ class FakeListingRepository implements ListingRepository {
 
   async find(filter: ListingFilter): Promise<Listing[]> {
     this.lastFilter = filter;
-    return this.listings.filter((listing) => matches(listing, filter));
+    return mostRecentPerGroup(this.listings).filter((listing) =>
+      matches(listing, filter),
+    );
   }
+
+  async findDetail(id: string, source: string): Promise<ListingDetail | null> {
+    const row = this.listings.find((l) => l.id === id && l.source === source);
+    if (!row) return null;
+
+    const key = keyOf(row);
+    const siblings =
+      key === null
+        ? [row]
+        : this.listings
+            .filter((listing) => keyOf(listing) === key)
+            .sort((a, b) => {
+              const aTime = Date.parse(a.listedDate);
+              const bTime = Date.parse(b.listedDate);
+              if (aTime !== bTime) return bTime - aTime;
+              if (a.id !== b.id) return a.id < b.id ? -1 : 1;
+              return a.source < b.source ? -1 : 1;
+            });
+
+    return {
+      ...row,
+      sources: siblings.map((sibling, index) => toSource(sibling, index === 0)),
+    };
+  }
+}
+
+/** Projects a listing into the lightweight shape the detail response carries. */
+function toSource(listing: Listing, isCurrent: boolean): ListingSource {
+  return {
+    id: listing.id,
+    source: listing.source,
+    address: listing.address,
+    city: listing.city,
+    state: listing.state,
+    zip: listing.zip,
+    price: listing.price,
+    listedDate: listing.listedDate,
+    status: listing.status,
+    isCurrent,
+  };
+}
+
+/** True when `candidate` outranks `current` as a group's representative. */
+function isNewer(candidate: Listing, current: Listing): boolean {
+  const candidateTime = Date.parse(candidate.listedDate);
+  const currentTime = Date.parse(current.listedDate);
+  if (candidateTime !== currentTime) return candidateTime > currentTime;
+  if (candidate.id !== current.id) return candidate.id < current.id;
+  return candidate.source < current.source;
+}
+
+function keyOf(listing: Listing): string | null {
+  return listing.dup_key ?? duplicateKey(listing);
+}
+
+function mostRecentPerGroup(listings: Listing[]): Listing[] {
+  const winners = new Map<string, Listing>();
+  for (const listing of listings) {
+    const key = keyOf(listing);
+    if (key === null) continue;
+    const current = winners.get(key);
+    if (current === undefined || isNewer(listing, current)) {
+      winners.set(key, listing);
+    }
+  }
+  const winningIds = new Set(
+    [...winners.values()].map((listing) => `${listing.id}\u0000${listing.source}`),
+  );
+  return listings.filter((listing) => {
+    const key = keyOf(listing);
+    if (key === null) return true;
+    return winningIds.has(`${listing.id}\u0000${listing.source}`);
+  });
 }
 
 class ThrowingListingRepository implements ListingRepository {
   async find(): Promise<Listing[]> {
+    throw new Error("database unavailable");
+  }
+
+  async findDetail(): Promise<ListingDetail | null> {
     throw new Error("database unavailable");
   }
 }
@@ -91,8 +176,8 @@ describe("GET /api/listings", () => {
     const res = await request(app).get("/api/listings").query({ targetBudget: 450000 });
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ page: 1, pageSize: 10, total: 4, totalPages: 1, hasNext: false, hasPrev: false });
-    expect(res.body.results).toHaveLength(4);
+    expect(res.body).toMatchObject({ page: 1, pageSize: 10, total: 3, totalPages: 1, hasNext: false, hasPrev: false });
+    expect(res.body.results).toHaveLength(3);
 
     // Sorted by descending score; the near-budget listings come first.
     const scores = res.body.results.map((l: { score: number }) => l.score);
@@ -106,43 +191,56 @@ describe("GET /api/listings", () => {
     expect(typeof first.score).toBe("number");
   });
 
-  it("keeps duplicate rows and annotates them instead of collapsing", async () => {
+  it("keeps only the most recent row of a duplicate group", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
     const res = await request(app).get("/api/listings").query({ city: "Springfield" });
 
     expect(res.status).toBe(200);
-    // Nothing is removed: A1, A2 and B7 are all returned.
-    expect(res.body.total).toBe(3);
+    // A1, A2 and B7 match; A1/B7 are the same home, so only the newest (A1) shows.
+    expect(res.body.total).toBe(2);
 
-    const byId = new Map<string, Record<string, unknown>>(
-      res.body.results.map((listing: { id: string }) => [
-        listing.id,
-        listing as Record<string, unknown>,
-      ]),
-    );
-    const a1 = byId.get("A1")!;
-    const b7 = byId.get("B7")!;
+    const ids = res.body.results.map((listing: { id: string }) => listing.id);
+    expect(ids).toContain("A1");
+    expect(ids).not.toContain("B7");
+    expect(ids).toContain("A2");
 
-    expect(a1.duplicateGroupId).toBe(b7.duplicateGroupId);
-    expect(a1.duplicateGroupId).not.toBeNull();
-    expect(a1.potentialDuplicates).toEqual([
-      {
-        id: "B7",
-        source: "MLS_B",
-        address: "123 Main Street",
-        city: "Springfield",
-        state: "VA",
-        zip: "22150",
-        price: 452000,
-        listedDate: SAME_DATE,
-      },
-    ]);
-    expect(a1.isPrimary).toBe(true);
-    expect(b7.isPrimary).toBe(false);
+    // No duplicate bookkeeping crosses the API boundary.
+    const [first] = res.body.results;
+    expect(first).not.toHaveProperty("duplicateGroupId");
+    expect(first).not.toHaveProperty("potentialDuplicates");
+    expect(first).not.toHaveProperty("isPrimary");
+  });
 
-    // A2 shares the city but not the location, so it is not flagged.
-    expect(byId.get("A2")!.duplicateGroupId).toBeNull();
-    expect(byId.get("A2")!.potentialDuplicates).toEqual([]);
+  it("applies filters to the group's newest row, hiding the property otherwise", async () => {
+    // One three-feed property: A1 (450k), B7 (452k), C8 (448k, newest).
+    const listings = [
+      makeListing({ id: "A1", source: "MLS_A", address: "123 Main St", price: 450000, listedDate: "2026-08-29T00:00:00.000Z" }),
+      makeListing({ id: "B7", source: "MLS_B", address: "123 Main Street", price: 452000, listedDate: "2026-08-27T00:00:00.000Z" }),
+      makeListing({ id: "C8", source: "MLS_C", address: "123 Main Street", price: 448000, listedDate: "2026-09-08T00:00:00.000Z" }),
+    ];
+    const app = createApp(new FakeListingRepository(listings));
+
+    // The newest row (C8, 448k) is the property's representative.
+    const all = await request(app).get("/api/listings");
+    expect(all.body.results.map((l: { id: string }) => l.id)).toEqual(["C8"]);
+
+    const wide = await request(app)
+      .get("/api/listings")
+      .query({ minPrice: 448000, maxPrice: 452000 });
+    expect(wide.body.results.map((l: { id: string }) => l.id)).toEqual(["C8"]);
+
+    // A1 (450k) and B7 (452k) fall in range but are not the representative, so
+    // the property is hidden rather than shown as an older sibling.
+    const mid = await request(app)
+      .get("/api/listings")
+      .query({ minPrice: 450000, maxPrice: 452000 });
+    expect(mid.body.total).toBe(0);
+    expect(mid.body.results).toEqual([]);
+
+    const narrow = await request(app)
+      .get("/api/listings")
+      .query({ minPrice: 452000, maxPrice: 452000 });
+    expect(narrow.body.total).toBe(0);
   });
 
   it("forwards all filters to the repository", async () => {
@@ -170,7 +268,9 @@ describe("GET /api/listings", () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
     const res = await request(app).get("/api/listings").query({ minPrice: 400000, maxPrice: 460000 });
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(2);
+    // The A1/B7 group is represented by A1 (450k); B7 (452k) is dropped before
+    // filtering, so only A1 is in range.
+    expect(res.body.total).toBe(1);
     for (const listing of res.body.results) {
       expect(listing.price).toBeGreaterThanOrEqual(400000);
       expect(listing.price).toBeLessThanOrEqual(460000);
@@ -181,14 +281,17 @@ describe("GET /api/listings", () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
     const res = await request(app).get("/api/listings").query({ city: "springfield" });
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(3);
+    expect(res.body.total).toBe(2);
   });
 
   it("filters by keyword against the description", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
     const res = await request(app).get("/api/listings").query({ keyword: "pets" });
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(3);
+    // The representative of the A1/B7 group is A1, whose description has no
+    // "pets"; B7 is dropped before the keyword filter runs, so only A2 and A3
+    // remain - the property is hidden, not shown as its older sibling.
+    expect(res.body.total).toBe(2);
   });
 
   it("filters by minimum bedrooms", async () => {
@@ -204,9 +307,9 @@ describe("GET /api/listings", () => {
     const res = await request(app).get("/api/listings").query({ sort: "price_asc" });
 
     expect(res.status).toBe(200);
-    // A1=450k, A2=525k, A3=399k, B7=452k -> cheapest first.
+    // A1=450k, A2=525k, A3=399k (B7 collapses into A1) -> cheapest first.
     const prices: number[] = res.body.results.map((l: { price: number }) => l.price);
-    expect(prices).toEqual([399000, 450000, 452000, 525000]);
+    expect(prices).toEqual([399000, 450000, 525000]);
   });
 
   it("rejects an unknown sort value with 400", async () => {
@@ -221,12 +324,12 @@ describe("GET /api/listings", () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
 
     const first = await request(app).get("/api/listings").query({ page: 1, pageSize: 2 });
-    expect(first.body).toMatchObject({ page: 1, pageSize: 2, total: 4, totalPages: 2, hasNext: true, hasPrev: false });
+    expect(first.body).toMatchObject({ page: 1, pageSize: 2, total: 3, totalPages: 2, hasNext: true, hasPrev: false });
     expect(first.body.results).toHaveLength(2);
 
     const second = await request(app).get("/api/listings").query({ page: 2, pageSize: 2 });
-    expect(second.body).toMatchObject({ page: 2, pageSize: 2, total: 4, totalPages: 2, hasNext: false, hasPrev: true });
-    expect(second.body.results).toHaveLength(2);
+    expect(second.body).toMatchObject({ page: 2, pageSize: 2, total: 3, totalPages: 2, hasNext: false, hasPrev: true });
+    expect(second.body.results).toHaveLength(1);
   });
 
   it("returns an empty page when paging past the end", async () => {
@@ -234,7 +337,7 @@ describe("GET /api/listings", () => {
     const res = await request(app).get("/api/listings").query({ page: 99, pageSize: 2 });
     expect(res.status).toBe(200);
     expect(res.body.results).toEqual([]);
-    expect(res.body.total).toBe(4);
+    expect(res.body.total).toBe(3);
     expect(res.body.hasNext).toBe(false);
   });
 
@@ -271,6 +374,80 @@ describe("GET /api/listings", () => {
   it("returns 500 when the repository fails", async () => {
     const app = createApp(new ThrowingListingRepository());
     const res = await request(app).get("/api/listings");
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("INTERNAL_ERROR");
+  });
+});
+
+describe("GET /api/listings/:source/:id", () => {
+  /** One three-feed property, newest last-created (C8) but listed first. */
+  function threeWayGroup(): Listing[] {
+    return [
+      makeListing({ id: "A1", source: "MLS_A", address: "123 Main St", price: 450000, listedDate: "2026-08-29T00:00:00.000Z" }),
+      makeListing({ id: "B7", source: "MLS_B", address: "123 Main Street", price: 452000, listedDate: "2026-08-27T00:00:00.000Z" }),
+      makeListing({ id: "C8", source: "MLS_C", address: "123 Main Street", price: 448000, listedDate: "2026-09-08T00:00:00.000Z" }),
+    ];
+  }
+
+  it("returns the requested listing plus its siblings, newest first", async () => {
+    const app = createApp(new FakeListingRepository(threeWayGroup()));
+    const res = await request(app).get("/api/listings/MLS_C/C8");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: "C8", source: "MLS_C", price: 448000 });
+
+    expect(res.body.sources.map((s: ListingSource) => s.id)).toEqual([
+      "C8",
+      "A1",
+      "B7",
+    ]);
+    // The newest row is the one the grid shows.
+    expect(res.body.sources[0]).toMatchObject({ id: "C8", isCurrent: true });
+    expect(res.body.sources[1].isCurrent).toBe(false);
+    expect(res.body.sources[2].isCurrent).toBe(false);
+  });
+
+  it("still returns the whole group when an older sibling is requested", async () => {
+    const app = createApp(new FakeListingRepository(threeWayGroup()));
+    const res = await request(app).get("/api/listings/MLS_B/B7");
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe("B7");
+    // The newest sibling is still flagged as the current listing.
+    expect(res.body.sources.map((s: ListingSource) => s.id)).toEqual([
+      "C8",
+      "A1",
+      "B7",
+    ]);
+    expect(res.body.sources[0].isCurrent).toBe(true);
+    expect(res.body.sources.find((s: ListingSource) => s.id === "B7").isCurrent).toBe(
+      false,
+    );
+  });
+
+  it("returns a single source for a listing with no duplicates", async () => {
+    const solo = makeListing({ id: "A9", source: "MLS_A", latitude: 40, longitude: -80 });
+    const app = createApp(new FakeListingRepository([solo]));
+    const res = await request(app).get("/api/listings/MLS_A/A9");
+
+    expect(res.status).toBe(200);
+    expect(res.body.sources).toEqual([
+      expect.objectContaining({ id: "A9", source: "MLS_A", isCurrent: true }),
+    ]);
+  });
+
+  it("returns 404 for an unknown listing", async () => {
+    const app = createApp(new FakeListingRepository(sampleListings()));
+    const res = await request(app).get("/api/listings/MLS_A/NOPE");
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 500 when the repository fails", async () => {
+    const app = createApp(new ThrowingListingRepository());
+    const res = await request(app).get("/api/listings/MLS_A/A1");
+
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("INTERNAL_ERROR");
   });

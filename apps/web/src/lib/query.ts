@@ -22,7 +22,20 @@ const SORT_KEY_SET = {
 export const SORT_KEYS = Object.keys(SORT_KEY_SET) as SortKey[];
 
 /** The applied search - the shape stored in the URL and sent to the API. */
-export type ListingsQuery = SearchParams;
+export type ListingsQuery = SearchParams & {
+  /**
+   * When set, the detail modal is open for this listing. Web-only: it travels in
+   * the browser URL (so the modal is shareable and back-button friendly) but is
+   * never sent to the API.
+   */
+  detail?: ListingRef;
+};
+
+/** A listing selected for the detail modal, keyed by its `(source, id)` pair. */
+export interface ListingRef {
+  source: string;
+  id: string;
+}
 
 interface NumberOptions {
   integer?: boolean;
@@ -72,7 +85,15 @@ export function parseListingsQuery(params: URLSearchParams): ListingsQuery {
     pageSize:
       readNumber(params, "pageSize", { integer: true, min: 1, max: MAX_PAGE_SIZE }) ??
       DEFAULT_PAGE_SIZE,
+    detail: readDetail(params),
   };
+}
+
+/** Reads the optional detail-modal selection (`listingSource` + `listingId`). */
+function readDetail(params: URLSearchParams): ListingRef | undefined {
+  const source = readString(params, "listingSource");
+  const id = readString(params, "listingId");
+  return source && id ? { source, id } : undefined;
 }
 
 /** Reads the `sort` param, dropping anything outside the whitelist. */
@@ -99,6 +120,19 @@ export function toSearchParams(query: ListingsQuery): URLSearchParams {
   params.set("page", String(query.page));
   params.set("pageSize", String(query.pageSize));
 
+  return params;
+}
+
+/**
+ * Like `toSearchParams`, but also carries the web-only detail selection. Used
+ * for the browser URL; the API request uses `toSearchParams` (search only).
+ */
+export function toUrlSearchParams(query: ListingsQuery): URLSearchParams {
+  const params = toSearchParams(query);
+  if (query.detail) {
+    params.set("listingSource", query.detail.source);
+    params.set("listingId", query.detail.id);
+  }
   return params;
 }
 

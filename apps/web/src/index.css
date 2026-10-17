@@ -570,25 +570,6 @@ button:disabled {
   white-space: nowrap;
 }
 
-/* --- Duplicate hints --- */
-.primary-tag {
-  display: inline-block;
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background: var(--success-surface);
-  color: var(--success-text);
-  font-size: 0.7rem;
-  white-space: nowrap;
-}
-
-/* The bottom of the card is reserved for the duplicate hint, full width. */
-.duplicate-note {
-  display: block;
-  margin: 0;
-  color: var(--warning);
-  font-size: 0.75rem;
-}
-
 /* --- Pagination --- */
 .pagination {
   display: flex;
@@ -601,4 +582,402 @@ button:disabled {
 .pagination-status {
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* --- Card address as an action that opens the detail overlay --- */
+.listing-address-link {
+  padding: 0;
+  border: none;
+  background: none;
+  /* Inherit the heading's font/color so the reset is invisible. */
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.listing-address-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* --- Modals: detail overlay + photo lightbox (native <dialog>) --- */
+.modal {
+  /* Replace the UA dialog frame; each modal styles itself. */
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+
+.modal::backdrop {
+  background: rgba(15, 23, 32, 0.55);
+}
+
+.listing-detail {
+  width: min(940px, calc(100vw - 2rem));
+  max-height: min(88vh, 920px);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.detail-body {
+  position: relative;
+  max-height: min(88vh, 920px);
+  overflow-y: auto;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.detail-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2933;
+  font-size: 1.2rem;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.detail-close:hover {
+  background: #ffffff;
+  color: var(--accent-hover);
+}
+
+.detail-main {
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.detail-price {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-address {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.detail-locality {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+  margin: 0.9rem 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.stat-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.detail-description {
+  margin: 0 0 0.5rem;
+  color: var(--text);
+}
+
+.detail-newer {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.detail-newer-link {
+  margin-left: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detail-newer-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.retry-button {
+  margin-top: 0.5rem;
+}
+
+/* --- Photo gallery (Zillow-style mosaic) --- */
+.photo-gallery {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  aspect-ratio: 16 / 7;
+  background: var(--surface-muted);
+}
+
+.photo-gallery.is-empty {
+  display: block;
+  aspect-ratio: 16 / 7;
+}
+
+.gallery-hero {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+
+.gallery-thumbs {
+  /* Let the tile buttons participate directly in the parent grid. */
+  display: contents;
+}
+
+.gallery-hero,
+.gallery-thumb {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.gallery-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.see-all-photos {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f2933;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.see-all-photos:hover {
+  color: var(--accent-hover);
+}
+
+/* --- Photo lightbox --- */
+.lightbox {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0;
+  background: #0b0f14;
+  color: #ffffff;
+}
+
+.lightbox-header {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+.lightbox-counter {
+  font-variant-numeric: tabular-nums;
+  color: #e6edf3;
+}
+
+.lightbox-close,
+.lightbox-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  line-height: 1;
+}
+
+.lightbox-close {
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1.4rem;
+}
+
+.lightbox-nav {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1.6rem;
+}
+
+.lightbox-close:hover,
+.lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.lightbox-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  padding: 3rem 1rem 1rem;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* --- Sources / provenance panel --- */
+.sources-panel {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sources-heading {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.sources-note {
+  margin: 0 0 0.6rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sources-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.source-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+}
+
+.source-row:last-child {
+  border-bottom: none;
+}
+
+.source-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Older rows read as history rather than the current listing. */
+.source-row:not([data-current="true"]) .source-name {
+  color: var(--text-muted);
+}
+
+.source-price {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.source-date,
+.source-status {
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.source-current-tag {
+  margin-left: auto;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--success-surface);
+  color: var(--success-text);
+  font-size: 0.7rem;
+}
+
+/* --- Narrow screens --- */
+@media (max-width: 640px) {
+  .listing-detail {
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .detail-body {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .photo-gallery {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    aspect-ratio: auto;
+  }
+
+  .gallery-hero {
+    grid-column: 1 / 3;
+    grid-row: 1;
+    aspect-ratio: 3 / 2;
+  }
+
+  .gallery-thumb {
+    aspect-ratio: 3 / 2;
+  }
 }

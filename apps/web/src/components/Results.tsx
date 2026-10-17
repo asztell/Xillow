@@ -20,6 +20,8 @@ interface ResultsProps {
   onSortChange: (sort: SortKey) => void;
   onRetry: () => void;
   onPageChange: (page: number) => void;
+  /** Opens the detail overlay for a listing. */
+  onSelect: (source: string, id: string) => void;
 }
 
 /** Renders the four states the brief calls for: loading, error, empty, success. */
@@ -32,6 +34,7 @@ export function Results({
   onSortChange,
   onRetry,
   onPageChange,
+  onSelect,
 }: ResultsProps) {
   if (status === "loading") {
     return (
@@ -71,7 +74,7 @@ export function Results({
         </p>
         <SortSelect value={sort} onChange={onSortChange} disabled={isFetching} />
       </div>
-      <ListingCards listings={data.results} />
+      <ListingCards listings={data.results} onSelect={onSelect} />
       <Pagination
         page={data.page}
         totalPages={data.totalPages}

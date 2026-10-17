@@ -1,8 +1,6 @@
 import { useState } from "react";
-import {
-  PLACEHOLDER_IMAGE_URL,
-  photoPlaceholder,
-} from "../lib/photoPlaceholder";
+import { PLACEHOLDER_IMAGE_URL } from "../lib/photoPlaceholder";
+import { ListingPhoto } from "./ListingPhoto";
 
 interface PhotoCarouselProps {
   /** Remote image URLs for this listing; may be empty. */
@@ -18,23 +16,14 @@ interface PhotoCarouselProps {
  * several photos exist. A listing with no photos (or one whose remote image
  * fails to load) falls back first to the branded `PLACEHOLDER_IMAGE_URL` and,
  * if even that cannot be fetched, to a generated, network-free SVG - so the
- * media slot is never empty and the card layout stays stable.
+ * media slot is never empty and the card layout stays stable. The fallback
+ * chain lives in `ListingPhoto`, which the detail mosaic and lightbox reuse.
  */
 export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
   const [index, setIndex] = useState(0);
   const count = photos.length;
   // Clamp (rather than reset) if the listing changes while mounted.
   const current = count === 0 ? 0 : Math.min(index, count - 1);
-  const generated = photoPlaceholder(alt);
-
-  // Staged fallback: listing photo -> branded placeholder -> generated SVG.
-  const onImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    // Already showing the last resort - stop so a failing image cannot loop.
-    if (img.src === generated) return;
-    img.alt = "";
-    img.src = img.src === PLACEHOLDER_IMAGE_URL ? generated : PLACEHOLDER_IMAGE_URL;
-  };
 
   if (count === 0) {
     return (
@@ -43,12 +32,10 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
         role="img"
         aria-label={`Photo placeholder for ${alt}`}
       >
-        <img
+        <ListingPhoto
           className="listing-photo-img"
           src={PLACEHOLDER_IMAGE_URL}
           alt=""
-          loading="lazy"
-          onError={onImageError}
         />
       </div>
     );
@@ -60,13 +47,11 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
 
   return (
     <div className="listing-photo">
-      <img
+      <ListingPhoto
         key={current}
         className="listing-photo-img"
         src={photos[current]}
         alt={altText}
-        loading="lazy"
-        onError={onImageError}
       />
       {count > 1 && (
         <>
