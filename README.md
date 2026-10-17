@@ -129,6 +129,9 @@ The same scripts exist inside `apps/api` and `apps/web`, e.g.
 
 Any parameter may be omitted. Empty values are treated as omitted.
 
+`total` counts the deduplicated rows returned (one per property), not raw source
+rows — see "Duplicate listings" below.
+
 **Response `200`**
 
 ```json
@@ -156,21 +159,7 @@ Any parameter may be omitted. Empty values are treated as omitted.
       "listedDate": "2026-08-29T00:00:00.000Z",
       "status": "active",
       "description": "Bright top-floor condo near shops and transit. Pet friendly.",
-      "score": 0.87,
-      "duplicateGroupId": "dup-01",
-      "potentialDuplicates": [
-        {
-          "id": "B7",
-          "source": "MLS_B",
-          "address": "123 Main Street, Unit 4B",
-          "city": "Springfield",
-          "state": "VA",
-          "zip": "22150",
-          "price": 452000,
-          "listedDate": "2026-08-27T00:00:00.000Z"
-        }
-      ],
-      "isPrimary": true
+      "score": 0.87
     }
   ]
 }
@@ -212,7 +201,55 @@ curl "http://localhost:3000/api/listings?minPrice=400000&maxPrice=500000"
 # Full search, ranked against a target budget, second page of 3
 curl "http://localhost:3000/api/listings?city=Springfield&keyword=pets&minBedrooms=2\
 &targetBudget=475000&page=2&pageSize=3"
+
+# One listing and every feed row for the same property
+curl "http://localhost:3000/api/listings/MLS_C/C8"
 ```
+
+### `GET /api/listings/:source/:id`
+
+Fetches one listing plus its provenance, for the UI's detail overlay. `id` and
+`source` form the composite primary key, so the pair identifies exactly one row
+(`MLS_A` and `MLS_B` can both contain an `A1`).
+
+The response is the requested row — whatever its age, so deep-linking an older
+sibling still resolves — with a `sources` array holding every feed row that
+describes the same property, newest first. The newest row carries
+`isCurrent: true`, which is the one the search results show. A listing with no
+duplicates returns a single-entry `sources`.
+
+**Response `200`**
+
+```json
+{
+  "id": "B7",
+  "source": "MLS_B",
+  "address": "123 Main Street",
+  "city": "Springfield",
+  "state": "VA",
+  "zip": "22150",
+  "price": 452000,
+  "bedrooms": 2,
+  "bathrooms": 1.5,
+  "sqft": 980,
+  "latitude": 38.7893,
+  "longitude": -77.1873,
+  "listedDate": "2026-08-27T00:00:00.000Z",
+  "status": "active",
+  "description": "Bright top-floor condo near shops and transit.",
+  "photos": ["https://images.unsplash.com/photo-…"],
+  "sources": [
+    { "id": "C8", "source": "MLS_C", "address": "123 Main Street", "city": "Springfield",
+      "state": "VA", "zip": "22150", "price": 448000, "listedDate": "2026-09-08T00:00:00.000Z",
+      "status": "active", "isCurrent": true },
+    { "id": "A1", "source": "MLS_A", "…": "…", "price": 450000, "isCurrent": false },
+    { "id": "B7", "source": "MLS_B", "…": "…", "price": 452000, "isCurrent": false }
+  ]
+}
+```
+
+**Error `404`** — `{"error":{"code":"NOT_FOUND","message":"Listing not found."}}`
+when the `(source, id)` pair does not exist; **`500`** on a database failure.
 
 ## Web app
 
@@ -246,7 +283,7 @@ calling `GET /api/listings` for real data.
   that fails to load) fall back to the branded placeholder image and, if even
   that can't be fetched, a generated offline-safe illustration - so the layout
   never breaks.
-  The card bottom is reserved **full width** for the duplicate hint. A
+  Duplicate rows are collapsed server-side, so each property appears once. A
   **sort dropdown** at the
   top of the results follows the portals' convention: **Recommended** (the API's
   relevance ranking) by default, plus **Price: High to Low**, **Price: Low to
@@ -255,6 +292,19 @@ calling `GET /api/listings` for real data.
   URL (`?sort=price_asc`), survives reloads/back-forward, is preserved when
   filters change, and resets to page 1. Sorting happens server-side (before
   pagination), so every page reflects the same global order.
+- **Detail overlay:** clicking a card's address opens the listing in a modal
+  over the grid (the results stay mounted behind it) via `GET
+  /api/listings/:source/:id`. It leads with a **Zillow-style photo mosaic** —
+  a hero with a 2×2 tile grid and a "See all N photos" button — that opens a
+  **full-screen lightbox** with prev/next, a position counter, and
+  ←/→ arrow keys; Esc closes the topmost layer only, so the lightbox stacks
+  cleanly over the overlay. Below the photos sit the price, address, stats and
+  description, then a **Sources** panel listing every feed row for the
+  property (newest first, the current one tagged). A listing with no duplicates
+  shows a single "Listed on …" note. The overlay is deep-linkable
+  (`?listingSource=…&listingId=…`), survives reload, and Back closes it; deep
+  link into an older sibling and it stays resolved while pointing at the newer
+  listing the grid shows.
 - **States:** loading, no-results, and error are all rendered distinctly. A
   `400` shows the API's message (and offending field); a `500`/network failure
   shows a retry button.
@@ -276,13 +326,17 @@ writes both go through `useSearchParams` in a small `useListingQuery` hook, with
 defaults instead of crashing. The form holds a *draft* and only promotes it to
 the URL on submit.
 
-The route table lives in `apps/web/src/routes.tsx` — one route today, but it
-means a listing detail route (e.g. `/listings/:id`) can be added without
-restructuring the app.
+The route table lives in `apps/web/src/routes.tsx` — one route today. The
+listing detail deliberately is **not** a route: it is an overlay selected by
+`listingSource`/`listingId` in the query string, which keeps the grid mounted
+behind it and preserves scroll and search state, while still being shareable
+and back-button friendly.
 
-Server state is managed with **TanStack Query**: the whole query object is the
-cache key, and `keepPreviousData` keeps the current page visible while the next
-one loads (no flicker on pagination).
+Server state is managed with **TanStack Query**. The cache key is the search
+params — not the whole URL — so opening or closing the detail overlay never
+refetches the grid, and `keepPreviousData` keeps the current page visible while
+the next one loads (no flicker on pagination). The overlay's own data is
+fetched by `useListingDetail` under its `(source, id)` key.
 
 ### Talking to the API
 
@@ -347,17 +401,26 @@ and `C9` are **MLS_C siblings added to two of the original pairs**, so
 primary-selection tiebreak: `C8` (2026-09-08) is newest in its group and
 becomes primary over `A1`/`B7`, while `A3` stays primary over `B9`/`C9`.
 
-We deliberately **keep every source row and annotate it** rather than collapsing:
+Search results **return the newest row of each group** so the UI shows one card
+per property rather than one per feed. The representative is chosen **before any
+filter is applied**, so a property is always shown (or hidden) as its most recent
+listing:
 
-- `total` keeps counting raw rows — nothing is silently dropped;
-- each row carries `duplicateGroupId`, `potentialDuplicates` (its sibling rows,
-  including the sibling's full address and price) and `isPrimary`;
-- the UI shows a *"Possible duplicate of <full address> (<source> <price>)"* note
-  on every row in a group.
+- `total` counts the deduplicated properties actually displayed — `28` for the
+  unfiltered sample, not the raw `34`;
+- a filter applies to that representative: a price range that excludes the newest
+  sibling **hides the property entirely** rather than surfacing an older, cheaper
+  one. E.g. for the `A1`/`B7`/`C8` group (450k / 452k / **448k, newest**) a
+  `448000–452000` filter shows `C8`, while `450000–452000` shows nothing;
+- no duplicate bookkeeping crosses the search API boundary: the response carries
+  no `duplicateGroupId` / `potentialDuplicates` / `isPrimary` fields, and the
+  grid renders no duplicate hint. Siblings surface **only on the detail
+  overlay's Sources panel** (`GET /api/listings/:source/:id`), which lists every
+  feed row for the property newest-first.
 
 ### How duplicates are found
 
-Implemented in `apps/api/src/lib/dedupe.ts` (`duplicateKey` / `annotateDuplicates`):
+The grouping key is computed in `apps/api/src/lib/dedupe.ts` (`duplicateKey`):
 
 1. **Geocode (primary).** Rows at the same location are the same place.
    Coordinates are quantized to ~11 m so trivial geocoder jitter still matches;
@@ -371,16 +434,20 @@ Implemented in `apps/api/src/lib/dedupe.ts` (`duplicateKey` / `annotateDuplicate
    (`Apt 4B` vs `Apt 5C`) are **not** merged even though they share a geocode.
 
 `A4`/`B10` share a city and zip but differ on both address and coordinates, so
-they are correctly left un-flagged — the false positive a "same city/zip" rule
+they are correctly left separate — the false positive a "same city/zip" rule
 would produce.
 
-### Which row is primary?
+### Which row represents the property?
 
-Within a group the **newest `listedDate`** is marked `isPrimary` (ties broken by
-`id`, then `source`). This matches the app's recency-first ranking and assumes the
-most recently listed price is the most current.
+Within a group the **newest `listedDate`** wins (ties broken by `id`, then
+`source`). This matches the app's recency-first ranking and assumes the most
+recently listed price is the most current.
 
-That is an assumption, not a fact, and the data shows why it matters:
+The choice is made in SQL, in `KyselyListingRepository.find`, as a correlated
+`NOT EXISTS` over the whole table (not over the filtered set), so the picked row
+is stable no matter which filters are active; rows with a `NULL` `dup_key` are
+unique and always pass. That is an assumption, not a fact, and the data shows why
+it matters:
 
 | Group    | Newer (primary) | Older sibling | Primary price | Sibling price |
 | -------- | --------------- | ------------- | ------------- | ------------- |
@@ -392,19 +459,20 @@ That is an assumption, not a fact, and the data shows why it matters:
 In three of the four groups the newer row is also the cheaper one, but **A5/B11
 goes the other way** — the newest listing is $5k *more* expensive. `listedDate`
 is the original list date, not a price-change timestamp, so an older, cheaper row
-may well reflect a recent price reduction. Because both rows stay in the results
-with their own prices, that spread remains visible: the annotation flags the
-sibling but never hides it. A real `modifiedAt`/`priceUpdatedAt` from the feeds
+may well reflect a recent price reduction. Because the older row is not the
+representative, its price is simply not returned — a filter around `465,000`
+hides this property rather than showing the older, cheaper sibling. A real
+`modifiedAt`/`priceUpdatedAt` from the feeds
 would make "most accurate price" exact; the received schema has no such column,
 so `listedDate` is the documented proxy.
 
 ### Trade-offs
 
 - `dup_key` is materialized at ingest (computed once by `duplicateKey()` and
-  stored on the row) and refreshed on every upsert, so filtering can no longer
-  suppress a duplicate note on a surviving sibling. A standalone
-  `npm run backfill:dup-key` command backfills existing rows and can be run in
-  `--audit-only` mode to surface missing or stale keys without writing.
+  stored on the row) and refreshed on every upsert, so the representative is
+  chosen in the database, before filtering, without recomputing keys per query.
+  A standalone `npm run backfill:dup-key` command backfills existing rows and can
+  be run in `--audit-only` mode to surface missing or stale keys without writing.
 - Grouping uses a quantized geocode key (O(n)); a Haversine ≤ 50 m union-find is
   the scale-grade version that avoids grid-boundary edge effects.
 
@@ -439,10 +507,13 @@ so `listedDate` is the documented proxy.
 - **Client validation mirrors the API, but doesn't replace it.** The form
   catches obvious mistakes for instant feedback; the API still validates
   everything (defence in depth), and server `400`s are surfaced in the UI.
-- **Duplicates are annotated, not merged.** Keeping every source row means
-  `total` counts listings, not distinct homes; merging would make `total` mean
-  "distinct properties" but would hide the price spread and provenance. See
-  "Duplicate listings" above.
+- **Duplicates are resolved to the newest sibling, in SQL, before filtering.**
+  `total` counts distinct properties, so the grid never shows the same home twice
+  (the feed rows are kept in the database, just not returned as their own
+  results). Their price/date/status spread is still visible — on the detail
+  overlay's Sources panel, without cluttering the grid. The filter trade-off
+  stands: a filter that excludes the newest sibling hides the property entirely.
+  See "Duplicate listings" above.
 
 ## Tests
 
@@ -457,12 +528,13 @@ npm test
 - `apps/api/src/lib/scoring.test.ts` — budget/recency math, weight blending,
   tied scores and deterministic ordering.
 - `apps/api/src/lib/dedupe.test.ts` — address normalization, the geocode key, the
-  unit guard, the address fallback, and grouping/primary selection over the
-  sample's duplicate pairs and the MLS_C three-way groups (including the
-  newer-but-pricier `A5`/`B11` and the primary flip that `C8`/`C9` cause).
+  unit guard and the address fallback.
 - `apps/api/src/routes/listings.test.ts` — the HTTP layer against an in-memory
-  repository: filtering, pagination boundaries, empty results, duplicate
-  annotation, `400`s and the `500` path.
+  repository that mirrors the SQL primary rule: filtering, pagination
+  boundaries, empty results, "newest row per group, filters apply to that row",
+  `400`s and the `500` path. Also covers the detail route: the row plus its
+  siblings newest-first, an older sibling resolving to the same group, a single
+  source for an unduplicated listing, and the `404`/`500`s.
 - `apps/api/src/lib/seeding.test.ts` — the ingest helpers: date normalization and
   duplicate-key detection (identical vs. conflicting repeats, report ordering).
 - `apps/api/src/seed.integration.test.ts` — seeds a throwaway Postgres database
@@ -470,23 +542,40 @@ npm test
   duplicated (and that a conflicting repeat resolves to the last value). It
   self-skips when no database is reachable, so `npm test` still passes without
   Docker running.
+- `apps/api/src/repositories/listingRepository.integration.test.ts` — pins the
+  primary-selection SQL against Postgres: the unfiltered result keeps one row per
+  group, a price range matching only an older sibling hides the property, and
+  `findDetail` returns the row with every sibling ordered newest-first (plus
+  `isCurrent` on the newest) or `null` for an unknown key.
+  Also self-skips without a database.
 
 **UI**
 
 - `apps/web/src/lib/query.test.ts` — URL parsing/serialization and defensive
-  handling of bad values; `filtersKey` ignores pagination.
+  handling of bad values; `filtersKey` ignores pagination; the detail selection
+  (`listingSource`/`listingId`) is read, kept out of the API params, and ignored
+  when deciding whether the form should reset.
 - `apps/web/src/lib/form.test.ts` — form validation edges (`minPrice > maxPrice`,
   negative/non-numeric values, `pageSize` bounds) and form/query conversion.
 - `apps/web/src/api/client.test.ts` — URL building and error mapping for `400`
-  (with `field`), `500`, and transport failures.
+  (with `field`), `500`, and transport failures; the detail URL is built from the
+  `(source, id)` pair (escaped), never sends the detail selection as a search
+  param, and maps a `404`/malformed body.
 - `apps/web/src/App.test.tsx` — the rendered app against MSW: ranked result
-  cards (address/price/bedrooms/locality), the photo carousel (prev/next, wrap,
+  cards (address/price/bedrooms/locality), one card per result with no duplicate
+  hint, the photo carousel (prev/next, wrap,
   placeholder + dead-image fallback), the sort dropdown (URL + page reset
-  + re-ordering), the duplicate note + full sibling address and
-  "most recent" tag, the theme toggle, the collapsible filter panel (toggle +
+  + re-ordering), the
+  theme toggle, the collapsible filter panel (toggle +
   active-filter badge), the Apply/Reset actions (including resetting every
   facet), loading, no-results, error + retry, pagination boundaries, filter
   submission, and client-side validation.
+- `apps/web/src/ListingDetail.test.tsx` — the detail overlay: opening it from a
+  card (grid stays mounted behind), deep-linking it, closing via the close
+  control and Escape, the not-found state, the provenance panel (multi-feed and
+  single-source), pointing an older sibling at the newer listing and switching
+  to it, and the photo mosaic + full-screen lightbox (counter, prev/next,
+  arrow keys, closing only the topmost layer, the no-photos placeholder).
 
 ## Project layout
 
@@ -499,12 +588,12 @@ apps/api/
     db.ts                      Postgres pool + Kysely instance + table types
     seed.ts                    schema + seed from sample_listings.json
     types.ts                   re-exports the shared types from @xillow/types
-    routes/listings.ts         GET /api/listings
-    repositories/listingRepository.ts   ListingRepository interface + Kysely impl
+    routes/listings.ts         GET /api/listings (+ /:source/:id detail)
+    repositories/listingRepository.ts   ListingRepository interface + Kysely impl (newest row per group; findDetail for provenance)
     lib/validation.ts          query parsing/validation (pure)
     lib/scoring.ts             relevance scoring (pure)
-    lib/dedupe.ts              cross-source duplicate detection (pure)
-    lib/search.ts              filter -> annotate duplicates -> rank -> sort -> paginate
+    lib/dedupe.ts              cross-source duplicate keys (pure)
+    lib/search.ts              repository (dedupe+filter) -> rank -> sort -> paginate
     lib/sorting.ts             sort comparators + whitelist (pure)
     lib/seeding.ts             ingest helpers (idempotent upsert + duplicate audit)
   schema.sql                   table DDL (composite PK, timestamptz, photos)
@@ -513,16 +602,19 @@ apps/api/
 apps/web/
   src/
     main.tsx                   app bootstrap + router + QueryClientProvider
-    routes.tsx                 route table (single view today)
-    App.tsx                    wires URL state, data fetching, and results
-    api/client.ts              fetch wrapper + structured error mapping
+    routes.tsx                 route table (single view; detail is an overlay, not a route)
+    App.tsx                    wires URL state, data fetching, results, and the detail overlay
+    api/client.ts              fetch wrapper + detail fetch + structured error mapping
     hooks/useListingQuery.ts   applied search <-> URL via React Router
-    hooks/useListings.ts       TanStack Query server state
-    lib/query.ts               ListingsQuery parse/serialize
+    hooks/useListings.ts       TanStack Query server state for the grid
+    hooks/useListingDetail.ts  TanStack Query server state for one listing + sources
+    lib/query.ts               ListingsQuery (+ detail selection) parse/serialize
     lib/form.ts                form values, validation, conversion
-    lib/format.ts              price/address formatting
+    lib/format.ts              price/date/address formatting
     lib/photoPlaceholder.ts    branded placeholder URL + generated offline fallback
-    components/                SearchForm, ListingCards, PhotoCarousel, SortSelect, Results, Pagination, ThemeToggle
+    components/                SearchForm, ListingCards, ListingDetailModal, Modal,
+                               SourcesPanel, PhotoGallery, PhotoLightbox, ListingPhoto,
+                               PhotoCarousel, SortSelect, Results, Pagination, ThemeToggle
   vite.config.ts               React plugin + /api dev proxy + Vitest config
 packages/types/
   src/index.ts                 shared domain + API contract types
@@ -536,6 +628,7 @@ compose.yml                    Postgres 18 service
 | Runnable app, wired end to end | `npm run dev` (API + UI); UI calls `GET /api/listings` |
 | Filtering, ranking, pagination | `apps/api/src/lib/` + `GET /api/listings` |
 | UI inputs + ranked results (address, price, bedrooms, key stats) | `apps/web/src/components/` |
+| Property detail overlay (photo mosaic + lightbox + cross-source provenance) | `apps/web/src/components/ListingDetailModal.tsx`, `GET /api/listings/:source/:id` |
 | Sort dropdown (Recommended/price/sqft/…) in the URL and via the API | `apps/web/src/components/SortSelect.tsx`, `apps/api/src/lib/sorting.ts` |
 | Loading / no-results / error states | `apps/web/src/components/Results.tsx` |
 | Deliberate invalid-input handling | `apps/api/src/lib/validation.ts` (400s), surfaced in the UI |
