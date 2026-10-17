@@ -70,7 +70,13 @@ query fragments. When touching them, confirm that:
 
 Vitest + `supertest`. Unit tests live beside their source in `lib/*.test.ts` and
 need no database. Tests needing a live Postgres use the `.integration.test.ts`
-suffix and are excluded from the default unit run — see `vitest.config.mts`.
+suffix.
+
+`vitest.config.mts` includes `src/**/*.test.ts`, so those files *do* run as part
+of `npm test` — they are not filtered out by name. Each one guards itself with
+`ctx.skip()` when `DATABASE_URL` is unset or unreachable, which keeps the suite
+green without a database. Do not assume "integration" means "excluded"; if you
+add one, give it the same guard.
 
 ## `node` skill override
 
