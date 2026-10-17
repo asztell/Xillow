@@ -6,6 +6,7 @@ import {
   emptyForm,
   formFromQuery,
   hasErrors,
+  isFormDirty,
   queryFromForm,
   validateFilters,
   type FilterField,
@@ -77,7 +78,14 @@ export function SearchForm({
   // Nothing to apply or clear when the draft is empty *and* the URL already has
   // no filters. If the URL does have filters, keep the actions live so the user
   // can still clear them.
-  const hasFilters = countActiveFormFilters(values) > 0 || activeCount > 0;
+  //
+  // `isFormDirty` is the third case: the draft differs from the applied query.
+  // The two counts above deliberately ignore `pageSize` (it is a display setting,
+  // not a filter), so without this term a change to "Results per page" on its own
+  // left Apply disabled and the change was silently dropped on submit.
+  const isDirty = isFormDirty(values, query);
+  const hasFilters =
+    countActiveFormFilters(values) > 0 || activeCount > 0 || isDirty;
 
   const handleChange =
     (field: FilterField) => (event: ChangeEvent<HTMLInputElement>) => {
