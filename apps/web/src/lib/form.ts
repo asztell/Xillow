@@ -1,4 +1,9 @@
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, type ListingsQuery } from "./query";
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  type ListingsQuery,
+} from "./query";
 
 /** Raw, string-backed form state (controlled inputs hold strings). */
 export interface FilterFormValues {
@@ -128,6 +133,31 @@ export function countActiveFilters(query: ListingsQuery): number {
 /** How many facets the draft form currently fills in. */
 export function countActiveFormFilters(values: FilterFormValues): number {
   return FILTER_KEYS.filter((key) => values[key].trim() !== "").length;
+}
+
+/**
+ * Whether the draft differs from the applied query in a way submitting would act on.
+ *
+ * This covers `pageSize` as well as the facets, unlike {@link countActiveFormFilters}:
+ * `pageSize` is excluded from the active-filter tally because it is a display
+ * setting rather than a filter, but changing it is still a real change to the
+ * search, so the form must offer to apply it. Without this, editing *only* the
+ * page size left nothing to enable the Apply button.
+ *
+ * `page` and `sort` are ignored: neither is owned by this form, so a difference
+ * there is not something submitting the form would change.
+ */
+export function isFormDirty(values: FilterFormValues, query: ListingsQuery): boolean {
+  const next = queryFromForm(values, DEFAULT_PAGE);
+  return (
+    next.minPrice !== query.minPrice ||
+    next.maxPrice !== query.maxPrice ||
+    next.minBedrooms !== query.minBedrooms ||
+    next.city !== query.city ||
+    next.keyword !== query.keyword ||
+    next.targetBudget !== query.targetBudget ||
+    next.pageSize !== query.pageSize
+  );
 }
 
 /** Converts validated form values into an applied query for the given page. */

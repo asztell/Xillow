@@ -324,6 +324,34 @@ describe("App", () => {
     expect(apply).toBeEnabled();
   });
 
+  it("enables Apply Filters when only the results per page is changed, and applies it", async () => {
+    const requests = handleListings(() => page());
+    renderApp();
+    await screen.findByText("123 Main St, Apt 4B");
+
+    const apply = screen.getByRole("button", { name: /^apply filters$/i });
+    // "Results per page" is a display setting, not a filter, so with no other
+    // facet in play the active-filter count stays 0 and only the draft change
+    // can enable this.
+    expect(apply).toBeDisabled();
+
+    const perPage = screen.getByLabelText(/^results per page$/i);
+    await userEvent.clear(perPage);
+    await userEvent.type(perPage, "25");
+    expect(apply).toBeEnabled();
+
+    await userEvent.click(apply);
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.searchParams.get("pageSize")).toBe("25"),
+    );
+    const last = requests.at(-1)!.searchParams;
+    expect(last.get("page")).toBe("1");
+    expect(last.get("city")).toBeNull();
+    // The draft now matches what was applied, so there is nothing left to apply.
+    expect(apply).toBeDisabled();
+  });
+
   it("badges the toggle with the number of active filters", async () => {
     handleListings((requestedPage) => page({ page: requestedPage }));
     renderApp({ initialEntries: ["/?city=Fairfax&minBedrooms=2&page=1"] });
