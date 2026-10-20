@@ -11,7 +11,7 @@ model, and trade-off rationale rather than duplicating it here.
 npm run gate                            # lint + format + typecheck + suite; one line on success
 npm run typecheck                       # all workspaces
 npm test                                # all workspaces
-npm run lint                            # oxlint (correctness rules fail the run)
+npm run lint                            # eslint, type-aware
 npm run format                          # prettier --write across the repo
 npm run build
 
@@ -28,17 +28,22 @@ npm run docker:reset                    # down -v, destroys the volume
 
 **Run npm scripts from the repo root.** They dispatch to the workspaces with
 `-w`, and `typecheck` is meant to run across all of them at once. TypeScript is
-`^7.0.2`; do not invoke `tsc` per package.
+`^6.0.3`; do not invoke `tsc` per package.
+
+**Do not upgrade TypeScript to 7.** `typescript-eslint` needs the JS compiler
+API (`createProgram`), which `typescript@7` no longer ships — it exposes only
+the `tsc` binary. On 7 the linter cannot start at all. TypeScript 6 is the last
+release that works with the lint stack.
 
 `npm run gate` swallows passing output and prints only a `✓` or the real
 failure. Prefer it over `npm test` — a passing suite in this repo is ~180 lines
 of noise. Set `GATE_REQUIRE_DB=1` to fail when the api integration tests are
 skipped, which is how CI asserts they really ran.
 
-Lint is **oxlint**, not ESLint: `typescript-eslint` hard-requires the TypeScript
-JS compiler API, and `typescript@7` ships only the `tsc` binary. Do not add
-`eslint` — it cannot parse this repo. Formatting is Prettier; `.prettierignore`
+Lint is **ESLint** with `typescript-eslint` type-aware rules; config is
+`eslint.config.mjs` at the root. Formatting is Prettier; `.prettierignore`
 excludes markdown (README.md is the spec of record) and `.opencode/` (vendored).
+The gate runs them cheapest-first: lint, format, typecheck, tests.
 
 ## Ground rules
 

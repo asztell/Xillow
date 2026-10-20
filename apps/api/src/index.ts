@@ -15,11 +15,13 @@ const server = app.listen(port, () => {
 });
 
 // Close the database connection cleanly on shutdown.
-const shutdown = async (signal: string) => {
+const shutdown = (signal: string): void => {
   console.log(`\n${signal} received, shutting down.`);
-  server.close(async () => {
-    await db.destroy().catch(() => undefined);
-    process.exit(0);
+  server.close(() => {
+    void db
+      .destroy()
+      .catch(() => undefined)
+      .finally(() => process.exit(0));
   });
 };
 

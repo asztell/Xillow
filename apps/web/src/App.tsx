@@ -61,7 +61,7 @@ export default function App() {
       // Deep link: there is no in-app entry to go back to, so clear the param.
       setQuery({ ...query, detail: undefined }, { replace: true });
     } else {
-      navigate(-1);
+      void navigate(-1);
     }
   }, [location.key, navigate, query, setQuery]);
 

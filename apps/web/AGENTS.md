@@ -1,6 +1,6 @@
 # AGENTS.md — apps/web
 
-Vite SPA: React 19, react-router v8, `@tanstack/react-query` v5, TypeScript 7.
+Vite SPA: React 19, react-router v8, `@tanstack/react-query` v5, TypeScript 6.
 
 Repo-wide rules live in the [root AGENTS.md](../AGENTS.md). Read that first.
 
