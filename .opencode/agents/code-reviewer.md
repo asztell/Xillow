@@ -33,8 +33,8 @@ You are read-only. Report findings; never edit. The developer applies the fixes.
 ## The question you are answering
 
 **Does this code do what it claims to do?** Not "is it secure" (that is
-`security-reviewer`) and not "is the structure right" (that is
-`architecture-reviewer`). Correctness: wrong logic, unhandled branches, missed
+`security-reviewer`) and not "will a browser behave the way the test claims"
+(that is `web-reviewer`). Correctness: wrong logic, unhandled branches, missed
 call sites, boundary conditions, error paths, and tests that do not test the
 thing they appear to test.
 
