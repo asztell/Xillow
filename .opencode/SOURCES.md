@@ -144,9 +144,19 @@ Source directory: [`mcollina/skills/skills`](https://github.com/mcollina/skills/
 | `.opencode/skills/node/` | `skills/node/` |
 | `.opencode/skills/typescript-magician/` | `skills/typescript-magician/` |
 
-Both are already in OpenCode's directory-based skill format (`SKILL.md` beside
-`rules/`), so they were copied **verbatim** — `SKILL.md`, `tile.json`, and all
-`rules/*.md` files, plus the `node` skill's `rules/assets/` examples.
+`typescript-magician` was copied **verbatim** — `SKILL.md`, `tile.json`, and
+all `rules/*.md`.
+
+`node` was copied and then **trimmed locally**:
+
+- `SKILL.md` and its description now target Node >= 20 with `tsx`, `tsc`, and
+  vitest. The upstream type-stripping primer and its trigger words were
+  removed; the body is now a short router to the rule files.
+- `tile.json`'s summary matches the new description.
+- `rules/typescript.md` was deleted; it was entirely type-stripping guidance
+  this repo does not use.
+- The remaining `rules/*.md` and `rules/assets/` are verbatim and are loaded on
+  demand, not with the skill.
 
 No adaptation was needed for the skill format itself:
 
@@ -157,13 +167,14 @@ No adaptation was needed for the skill format itself:
 
 ### Where the overrides live instead
 
-Both skills ship guidance that is wrong for this repo, so the corrections are
-**not** in the vendored files. They are in `apps/api/AGENTS.md`:
+`typescript-magician` ships one step that is wrong for this repo, so the
+correction is **not** in the vendored file. It is in `apps/api/AGENTS.md`.
+`node`'s corrections now live in its trimmed `SKILL.md`, with the always-on
+summary in `apps/api/AGENTS.md`:
 
-- **`node`** — upstream leads with TypeScript type stripping (Node 22.6+). This
-  repo is Node >= 20 using `tsx` and `tsc`. Upstream also targets `node:test`;
-  this repo uses vitest. Upstream suggests `lru-cache` / `async-cache-dedupe`,
-  which are not installed here.
+- **`node`** — Node >= 20 with `tsx`/`tsc`, not Node 22.6+ type stripping;
+  vitest, not `node:test`; `lru-cache` / `async-cache-dedupe` / `opossum` are
+  not installed.
 - **`typescript-magician`** — its step 1 is to run `tsc --noEmit`. Use
   `npm run typecheck` from the repo root, which dispatches to each workspace
   (`apps/api` typechecks via `tsconfig.test.json`).
@@ -243,5 +254,7 @@ curl -fsSL https://raw.githubusercontent.com/github/awesome-copilot/main/agents/
 ```
 
 After upgrading, re-check that upstream has not started covering Node 20 or
-vitest — if it has, the corresponding override here can be dropped. Never
-overwrite `.opencode/skills/postgres-kysely/`; it has no upstream.
+vitest — if it has, the corresponding override here can be dropped. Re-apply the
+`node` trim after any re-fetch: shorten `SKILL.md` and its description, delete
+`rules/typescript.md`, and update `tile.json`. Never overwrite
+`.opencode/skills/postgres-kysely/`; it has no upstream.
