@@ -10,6 +10,18 @@
       "action": "shell",
       "resource": "git push *",
       "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "git push *--no-verify*",
+      "effect": "deny"
+    }
+  ],
+  "policies": [
+    {
+      "action": "tool.use",
+      "resource": "shell:git push *--no-verify*",
+      "effect": "deny"
     }
   ]
 }

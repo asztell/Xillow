@@ -23,6 +23,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "gate": "bash scripts/gate.sh",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "docker:up": "docker compose up --build",
     "docker:up:detached": "docker compose up --build -d",
     "docker:down": "docker compose down",
