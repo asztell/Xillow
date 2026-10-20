@@ -67,23 +67,13 @@ of `npm test` — they are not filtered out by name. Each one guards itself with
 green without a database. Do not assume "integration" means "excluded"; if you
 add one, give it the same guard.
 
-## `node` skill override
+## `node` skill
 
-Load the `node` skill for backend patterns, but these upstream sections
-**do not apply** to this package:
-
-- **Ignore all type-stripping guidance.** It targets Node 22.6+ running `.ts`
-  directly. This is Node >= 20 with `tsx` for dev and `tsc` for builds. Do not
-  add `--experimental-strip-types`, `import type` refactors, or `.ts` import
-  extensions to enable stripping.
-- **Ignore `node:test` guidance.** Tests run on **vitest**. Translate flaky-test
-  and stuck-process advice to vitest (`--reporter`, `pool: 'forks'`, teardown
-  hooks) rather than introducing the built-in runner.
-- **Do not add dependencies without asking.** `lru-cache`, `async-cache-dedupe`,
-  and `opossum` are suggested by the skill but are not installed. Propose them,
-  then wait.
-- Graceful shutdown, structured error handling, logging, env/secrets, profiling,
-  and streams guidance all apply as written.
+The `node` skill is trimmed for this repo. Load it for runtime patterns:
+Node >= 20 with `tsx` for dev and `tsc` for builds, and **vitest** — not type
+stripping and not `node:test`. Do not add `lru-cache`, `async-cache-dedupe`, or
+`opossum` without asking. Graceful shutdown, structured error handling, logging,
+env/secrets, profiling, and streams guidance all apply as written.
 
 ## Environment
 
