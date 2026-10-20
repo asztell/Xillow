@@ -871,20 +871,144 @@ button:disabled {
   background: rgba(255, 255, 255, 0.22);
 }
 
+.lightbox-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .lightbox-stage {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 3rem 1rem 1rem;
 }
 
-.lightbox-img {
+.lightbox-figure {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   max-width: 100%;
-  max-height: 100%;
+  min-height: 0;
+}
+
+.lightbox-img {
+  display: block;
+  /* Definite height so the row underneath can inherit the rendered width. */
+  height: calc(100vh - 13rem);
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
   border-radius: 4px;
+}
+
+.lightbox-prev,
+.lightbox-next {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.lightbox-prev {
+  left: 0.75rem;
+}
+
+.lightbox-next {
+  right: 0.75rem;
+}
+
+/* Filmstrip: every photo in the gallery, with the current one gently marked. */
+.lightbox-filmstrip-wrap {
+  position: relative;
+  max-width: 100%;
+  margin-top: 20px;
+}
+
+.lightbox-filmstrip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+
+.filmstrip-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 1.9rem;
+  height: 2.6rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(11, 15, 20, 0.72);
+  color: #ffffff;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.filmstrip-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.filmstrip-nav:not(:disabled):hover {
+  background: rgba(11, 15, 20, 0.9);
+}
+
+.filmstrip-prev {
+  left: 0;
+}
+
+.filmstrip-next {
+  right: 0;
+}
+
+.lightbox-thumb {
+  flex: none;
+  width: 96px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  overflow: hidden;
+  opacity: 0.55;
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease;
+}
+
+.lightbox-thumb:hover {
+  opacity: 0.9;
+}
+
+.lightbox-thumb.is-selected {
+  border-color: #ffffff;
+  opacity: 1;
+}
+
+.lightbox-thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lightbox-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* --- Sources / provenance panel --- */
@@ -986,5 +1110,18 @@ button:disabled {
 
   .gallery-thumb {
     aspect-ratio: 3 / 2;
+  }
+
+  /* On narrow screens the width is the scarce axis, so drive the photo (and
+     therefore the row underneath) from the viewport instead. */
+  .lightbox-img {
+    height: auto;
+    width: 100%;
+    max-height: calc(100vh - 11rem);
+  }
+
+  .lightbox-thumb {
+    width: 72px;
+    height: 48px;
   }
 }

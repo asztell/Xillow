@@ -10,6 +10,8 @@ interface ListingPhotoProps {
   alt: string;
   className?: string;
   loading?: "lazy" | "eager";
+  /** React 19 ref-as-prop; the lightbox measures the rendered width. */
+  ref?: React.Ref<HTMLImageElement>;
 }
 
 /**
@@ -25,6 +27,7 @@ export function ListingPhoto({
   alt,
   className,
   loading = "lazy",
+  ref,
 }: ListingPhotoProps) {
   const generated = photoPlaceholder(alt);
 
@@ -39,6 +42,7 @@ export function ListingPhoto({
 
   return (
     <img
+      ref={ref}
       className={className}
       src={src}
       alt={alt}
