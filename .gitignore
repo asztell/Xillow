@@ -5,3 +5,7 @@ coverage/
 
 *.log
 .DS_Store
+
+# Working artifacts written by the /done loop. Ephemeral; not part of the repo.
+# Contracts under .opencode/contracts/ ARE meant to be committed.
+.opencode/findings/

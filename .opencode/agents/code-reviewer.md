@@ -91,12 +91,20 @@ Check these when the diff touches them:
 ## How to report
 
 Order findings by severity: **bug** → **likely bug** → **missing coverage** →
-**nit**. For each:
+**nit**. Return them as rows, because the caller persists them to a findings
+file and diffs the next round against it:
 
-- file and line
-- what is wrong
-- a concrete input or sequence that triggers it
-- why it matters
+```
+| # | file:line | severity | blocking | finding | fix |
+|---|---|---|---|---|---|
+| 1 | apps/api/src/lib/search.ts:42 | bug | yes | `minPrice` is compared as a string; `"450000" > "99999"` is lexically true | cast to number before comparing |
+```
+
+- **blocking** only for a correctness defect — wrong behaviour, an unhandled
+  branch that can be reached, a missed call site, or a test that cannot fail.
+  Style, naming, and preferences are `nit` and never blocking.
+- **fix** must be concrete enough to apply without re-deriving the analysis. If
+  you cannot name a fix, say what evidence would settle it instead.
 
 Keep it short. If the diff is clean, say so in one line — do not manufacture
 findings to look thorough. Explicitly list what you did **not** review (files

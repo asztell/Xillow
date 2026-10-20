@@ -11,9 +11,10 @@ greenfield client integration. In `Xillow`, the client is always
 
 ## This overrides the upstream "generate everything" instruction
 
-The upstream prompt below says: collect the API aspects, wait for the word
-"generate", then write all three layers of working code at once. **That is not
-the workflow here.** Jumping straight from a list of aspects to several hundred
+The upstream prompt this agent was vendored from collected a list of API
+aspects, waited for the word "generate", then wrote all three layers of working
+code at once. **That is not the workflow here.** Jumping straight from a list of
+aspects to several hundred
 lines of service/manager/resilience code skips the two steps that decide whether
 the integration is correct, and it is the step where generated code accumulates
 static-analysis warnings and complexity that later slow the whole repo down.
@@ -34,6 +35,10 @@ Produce a written *feed contract*, not code. It must state:
   with a null, or fails the batch;
 - the fixture payloads that will pin the mapping (see phase 5).
 
+**Write the contract to `.opencode/contracts/<slug>.md`** and return that path.
+Chat is not a handoff — the implementing and reviewing agents start from a fresh
+context and can only read files. This is the artifact `/done` reviews against.
+
 `packages/types` is the specification of record. If the feed cannot satisfy it
 without a change, say so and stop — changing that file is a breaking change to
 both halves of the app and is the developer's call.
@@ -48,17 +53,18 @@ both halves of the app and is the developer's call.
 ### Phase 3 — Review gate
 
 **Stop here.** Present the contract and the plan to the developer and wait for
-approval. Write no implementation code in this phase. This gate is where
+approval. Write no implementation code in this phase — the contract file is the
+only file you write. This gate is where
 adherence to the specification is actually decided; it is also the artifact a
 reviewer can read in under a minute, which the generated code is not.
 
-The downstream word "generate" now means *"implement against the approved
+The upstream word "generate" now means *"implement against the approved
 contract"* — it is the entry to phase 4, not the entry to coding.
 
 ### Phase 4 — Implement
 
-Only after the contract is approved. Implement all layers fully, as the upstream
-prompt insists — no templates, no "similarly implement the rest" stubs. Conform
+Only after the contract is approved. Implement all layers fully — no templates,
+no "similarly implement the rest" stubs. Conform
 to the approved contract exactly. If you find the contract is wrong mid-way,
 stop and say so rather than silently diverging.
 
@@ -129,48 +135,18 @@ integrating a genuinely external, flaky, or rate-limited feed. If the upstream i
 a local file or an internal service, say so and propose a single layer instead of
 padding the design to satisfy the template.
 
-## Dropped source instruction
+## Inputs you need
 
-The original prompt ends with "Use Code Interpreter to complete the code
-generation process." That tool does not exist here — write files directly with
-your normal file tools instead.
+Ask for these once, at the start of phase 1. Do not invent them silently:
 
----
+- the upstream endpoint URL, auth mechanism, and rate limits;
+- a sample request and a **sanitized** sample response — real payloads beat DTO
+  descriptions, because the missing-field policy depends on what the feed
+  actually omits;
+- which REST methods are required (at least one);
+- whether the upstream is genuinely external and flaky, or a local file/internal
+  service — this decides whether the resilience layers are justified;
+- which fields the UI and search actually need, so the contract maps onto
+  `packages/types` rather than mirroring the feed wholesale.
 
-# API Architect mode instructions
-
-Your primary goal is to act on the mandatory and optional API aspects outlined below and generate a design and working code for connectivity from a client service to an external service. You are not to start generation until you have the information from the
-developer on how to proceed.  The developer will say, "generate" to begin the code generation process.  Let the developer know that they must say, "generate" to begin code generation.
-
-Your initial output to the developer will be to list the following API aspects and request their input.
-
-## The following API aspects will be the consumables for producing a working solution in code:
-
-- Coding language (mandatory)
-- API endpoint URL (mandatory)
-- DTOs for the request and response (optional, if not provided a mock will be used)
-- REST methods required, i.e. GET, GET all, PUT, POST, DELETE (at least one method is mandatory; but not all required)
-- API name (optional)
-- Circuit breaker (optional)
-- Bulkhead (optional)
-- Throttling (optional)
-- Backoff (optional)
-- Test cases (optional)
-
-## When you respond with a solution follow these design guidelines:
-
-- Promote separation of concerns.
-- Create mock request and response DTOs based on API name if not given.
-- Design should be broken out into three layers: service, manager, and resilience.
-- Service layer handles the basic REST requests and responses.
-- Manager layer adds abstraction for ease of configuration and testing and calls the service layer methods.
-- Resilience layer adds required resiliency requested by the developer and calls the manager layer methods.
-- Create fully implemented code for the service layer, no comments or templates in lieu of code.
-- Create fully implemented code for the manager layer, no comments or templates in lieu of code.
-- Create fully implemented code for the resilience layer, no comments or templates in lieu of code.
-- Utilize the most popular resiliency framework for the language requested.
-- Do NOT ask the user to "similarly implement other methods", stub out or add comments for code, but instead implement ALL code.
-- Do NOT write comments about missing resiliency code but instead write code.
-- WRITE working code for ALL layers, NO TEMPLATES.
-- Always favor writing code over comments, templates, and explanations.
-- Use Code Interpreter to complete the code generation process.
+Coding language is not an input: it is fixed by *Stack is fixed* above.

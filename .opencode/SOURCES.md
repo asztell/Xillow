@@ -38,6 +38,11 @@ agents rather than skills.
 `.opencode/agents/code-reviewer.md` and `.opencode/agents/qa.md` are **not**
 vendored — see "Locally authored" below.
 
+**Upstream bodies are not kept verbatim any more.** `react-expert` and
+`api-architect` keep only their override section plus the smallest body that is
+not generic knowledge; the vendored prose was removed. Rationale and the rule
+used are under "Trimming the vendored bodies" below.
+
 ### Mechanical conversions applied
 
 - **Frontmatter replaced.** Upstream uses `description`, `name`, `tools`, `model`.
@@ -117,6 +122,34 @@ It takes precedence over the upstream prompt. Summary:
   A subagent entry path was added: a subagent cannot answer "say generate", so
   without it a delegated call would stall or invent the contract silently.
 
+### Trimming the vendored bodies
+
+An agent body is a **system prompt sent on every turn of that agent's session**,
+so it is paid repeatedly, not once. Measured before trimming:
+
+| Agent | Total | Override | Vendored body | ~Tokens/turn |
+|---|---|---|---|---|
+| `react-expert` | 789 lines | ~50 | 728 | 6,712 |
+| `api-architect` | 176 lines | ~138 | 37 | 2,233 |
+
+`react-expert`'s body also **contradicted its own override**: it opened by
+claiming expertise in Server Components and Actions, and carried full sections
+on `cacheSignal`, component-rendered `<title>`/`<meta>`, and `useFormStatus` in
+server-action forms — all explicitly ruled out above it.
+
+The rule applied: **keep the repo-specific mapping, cut the generic knowledge a
+frontier model already has.** Twelve React 19 code examples and a Well-Architected
+pillar walkthrough do not change behaviour; naming `src/test/renderApp.tsx`,
+`src/api/client.ts`, and `packages/types` does.
+
+`api-architect` additionally kept only the input checklist from upstream (endpoint,
+sample payloads, required methods, resilience justification) because those are
+real questions; it dropped the "write ALL layers, NO TEMPLATES" directives, which
+directly contradicted the phase 3 review gate.
+
+Re-fetching upstream on upgrade will reintroduce the removed text — re-apply the
+trim rather than restoring it wholesale.
+
 ---
 
 ## Skills — from `mcollina/skills`
@@ -165,6 +198,7 @@ provenance table above or re-fetched on upgrade.
 | `.opencode/agents/qa.md` | Runs the gate, reports facts incl. skipped integration tests |
 | `.opencode/commands/review.md` | `/review` — diff summary + delegates to `code-reviewer` |
 | `.opencode/commands/qa.md` | `/qa` — delegates to `qa` |
+| `.opencode/commands/done.md` | `/done` — the author → verify → review loop |
 | `scripts/gate.sh` | Backpressure wrapper; shared by `npm run gate`, `qa`, and CI |
 | `.github/workflows/ci.yml` | The only hard gate |
 
@@ -180,6 +214,24 @@ Design notes:
   `ctx.skip()` without `DATABASE_URL`, so "green" can mean "never ran". The
   agent is required to say which claim it is making, and CI sets
   `GATE_REQUIRE_DB=1` so the gate fails instead of skipping silently.
+- **`/done` is the loop; `/qa` and `/review` are its parts.** Running the two
+  separately leaves the developer as the loop — nothing owns the second pass.
+  `/done` orders the work **gate → review → fix → re-gate**, caps it at two
+  review rounds, and names the escalations (open blocking findings in round 2,
+  a gate still red after one fix attempt, a reviewer disagreeing with the gate).
+- **Deterministic before advisory.** `/done` never reviews a tree that does not
+  typecheck or test green. Reviewing code that does not compile burns a round on
+  something a machine already settled.
+- **Findings and contracts are files, not chat.** Subagents are stateless, so a
+  round 2 that re-derives its own opinion is not a loop. `/done` writes findings
+  to `.opencode/findings/<slug>.md` (gitignored) and `api-architect` writes the
+  contract to `.opencode/contracts/<slug>.md` (committed). Reviewers stay
+  read-only — the orchestrator writes the file, which keeps `edit` denied where
+  it should be.
+- **Reviews are routed, not fanned out.** `code-reviewer` always; `security-reviewer`
+  only when the diff touches query construction, validation, storage, rendering of
+  untrusted text, or env handling; `architecture-reviewer` only for a new
+  dependency, a schema change, or a moved boundary.
 
 These are not MIT-licensed third-party content, so the license section above
 does not apply to them.
