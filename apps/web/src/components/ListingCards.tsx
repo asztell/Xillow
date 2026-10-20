@@ -23,13 +23,22 @@ interface ListingCardsProps {
  * Property cards - the industry-standard way to show listings. Each card is an
  * `<article>` that leads with a full-width landscape photo strip, then a
  * price/provenance row, a single-line address (street fused with city, state
- * and zip), and the key stats. The address opens the detail overlay.
+ * and zip), and the key stats.
+ *
+ * The whole card opens the detail overlay. The address heading stays a real
+ * `<button>` so the action is keyboard-reachable and named for screen readers;
+ * the carousel's chevrons and that button stop propagation so they keep their
+ * own behaviour instead of triggering the card.
  */
 export function ListingCards({ listings, onSelect }: ListingCardsProps) {
   return (
     <div className="listing-grid" aria-label="Listings">
       {listings.map((listing) => (
-        <article className="listing-card" key={`${listing.source}:${listing.id}`}>
+        <article
+          className="listing-card"
+          key={`${listing.source}:${listing.id}`}
+          onClick={() => onSelect(listing.source, listing.id)}
+        >
           <div className="listing-card-media">
             <PhotoCarousel
               photos={listing.photos ?? []}
@@ -52,7 +61,12 @@ export function ListingCards({ listings, onSelect }: ListingCardsProps) {
               <button
                 type="button"
                 className="listing-address-link"
-                onClick={() => onSelect(listing.source, listing.id)}
+                onClick={(event) => {
+                  // Already handled by the card, but stop here so the click is
+                  // not dispatched twice.
+                  event.stopPropagation();
+                  onSelect(listing.source, listing.id);
+                }}
               >
                 {listing.address}
               </button>

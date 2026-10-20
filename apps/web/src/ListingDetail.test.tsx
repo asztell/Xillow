@@ -150,6 +150,47 @@ describe("listing detail overlay", () => {
     expect(screen.getByRole("article")).toBeInTheDocument();
   });
 
+  it("opens from anywhere on the card, not just the address", async () => {
+    handleListings();
+    handleDetail(() => detail());
+
+    renderApp();
+    const card = await screen.findByRole("article");
+    await userEvent.click(card);
+
+    expect(
+      await screen.findByRole("dialog", { name: new RegExp(ADDRESS) }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not open the overlay from the carousel chevrons", async () => {
+    handleListings(() =>
+      page({
+        results: [
+          scored({
+            photos: [
+              "https://example.test/1.jpg",
+              "https://example.test/2.jpg",
+              "https://example.test/3.jpg",
+            ],
+          }),
+        ],
+      }),
+    );
+    const calls = handleDetail(() => detail());
+
+    renderApp();
+    await screen.findByRole("article");
+
+    await userEvent.click(screen.getByRole("button", { name: /next photo/i }));
+
+    // The carousel advanced...
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    // ...without asking for the detail or opening the overlay.
+    expect(calls).toHaveLength(0);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("deep-links straight to the overlay and closes on Escape", async () => {
     handleListings();
     handleDetail(() => detail());
