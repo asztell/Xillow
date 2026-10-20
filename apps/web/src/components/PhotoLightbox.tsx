@@ -45,11 +45,7 @@ export function PhotoLightbox({
   }, [index, count, onIndexChange]);
 
   return (
-    <Modal
-      onClose={onClose}
-      className="lightbox"
-      labelledBy="lightbox-counter"
-    >
+    <Modal onClose={onClose} className="lightbox" labelledBy="lightbox-counter">
       <div className="lightbox-header">
         <span id="lightbox-counter" className="lightbox-counter">
           {index + 1} of {count}

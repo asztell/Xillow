@@ -58,7 +58,10 @@ interface SortRow {
 const LOWEST = Number.NEGATIVE_INFINITY;
 
 /** Final tie-break for every attribute sort: `id` asc, then `source` asc. */
-function byIdThenSource(a: { id: string; source: string }, b: { id: string; source: string }): number {
+function byIdThenSource(
+  a: { id: string; source: string },
+  b: { id: string; source: string },
+): number {
   if (a.id !== b.id) return a.id < b.id ? -1 : 1;
   if (a.source !== b.source) return a.source < b.source ? -1 : 1;
   return 0;
@@ -79,7 +82,10 @@ function byNewest(listedA: string, listedB: string): number {
 }
 
 /** Applies a sort to a copy of the list. `recommended` keeps the score order. */
-export function sortListings<T extends SortRow>(listings: T[], sort: SortKey): T[] {
+export function sortListings<T extends SortRow>(
+  listings: T[],
+  sort: SortKey,
+): T[] {
   const sorted = [...listings];
   switch (sort) {
     case "recommended":
@@ -89,13 +95,23 @@ export function sortListings<T extends SortRow>(listings: T[], sort: SortKey): T
     case "price_asc":
       return sorted.sort((a, b) => a.price - b.price || byIdThenSource(a, b));
     case "newest":
-      return sorted.sort((a, b) => byNewest(a.listedDate, b.listedDate) || byIdThenSource(a, b));
+      return sorted.sort(
+        (a, b) => byNewest(a.listedDate, b.listedDate) || byIdThenSource(a, b),
+      );
     case "bedrooms_desc":
-      return sorted.sort((a, b) => compareNullableDesc(a.bedrooms, b.bedrooms) || byIdThenSource(a, b));
+      return sorted.sort(
+        (a, b) =>
+          compareNullableDesc(a.bedrooms, b.bedrooms) || byIdThenSource(a, b),
+      );
     case "bathrooms_desc":
-      return sorted.sort((a, b) => compareNullableDesc(a.bathrooms, b.bathrooms) || byIdThenSource(a, b));
+      return sorted.sort(
+        (a, b) =>
+          compareNullableDesc(a.bathrooms, b.bathrooms) || byIdThenSource(a, b),
+      );
     case "sqft_desc":
-      return sorted.sort((a, b) => compareNullableDesc(a.sqft, b.sqft) || byIdThenSource(a, b));
+      return sorted.sort(
+        (a, b) => compareNullableDesc(a.sqft, b.sqft) || byIdThenSource(a, b),
+      );
     default: {
       // Compile-time guard: adding a `SortKey` without a case is a type error.
       const unhandled: never = sort;

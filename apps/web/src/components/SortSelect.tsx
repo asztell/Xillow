@@ -22,7 +22,11 @@ interface SortSelectProps {
  * Zillow-style sort dropdown. Placed at the top of the results and kept in the
  * URL (`?sort=price_asc`) so the choice survives reloads and back/forward.
  */
-export function SortSelect({ value, onChange, disabled = false }: SortSelectProps) {
+export function SortSelect({
+  value,
+  onChange,
+  disabled = false,
+}: SortSelectProps) {
   return (
     <div className="sort-select">
       <span className="sort-select-label">Sort</span>

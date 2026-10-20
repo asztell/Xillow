@@ -27,10 +27,7 @@ export function useListingQuery(): [
 
   // `useSearchParams` memoizes its result by `location.search`, so this only
   // re-parses when the URL actually changes.
-  const query = useMemo(
-    () => parseListingsQuery(searchParams),
-    [searchParams],
-  );
+  const query = useMemo(() => parseListingsQuery(searchParams), [searchParams]);
 
   const setQuery = useCallback(
     (next: ListingsQuery, options?: SetQueryOptions) =>

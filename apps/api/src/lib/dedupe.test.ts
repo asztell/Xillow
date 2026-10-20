@@ -55,13 +55,21 @@ describe("normalizeAddress", () => {
 describe("duplicateKey", () => {
   it("groups rows that share a geocode", () => {
     const a1 = listing();
-    const b7 = listing({ id: "B7", source: "MLS_B", address: "123 Main Street, Unit 4B" });
+    const b7 = listing({
+      id: "B7",
+      source: "MLS_B",
+      address: "123 Main Street, Unit 4B",
+    });
     expect(duplicateKey(a1)).toBe(duplicateKey(b7));
   });
 
   it("keeps different units in one building apart (unit guard)", () => {
     const unit4b = listing({ address: "1 Elm St, Apt 4B" });
-    const unit5c = listing({ id: "B1", source: "MLS_B", address: "1 Elm St, Apt 5C" });
+    const unit5c = listing({
+      id: "B1",
+      source: "MLS_B",
+      address: "1 Elm St, Apt 5C",
+    });
     expect(duplicateKey(unit4b)).not.toBe(duplicateKey(unit5c));
   });
 
@@ -79,6 +87,8 @@ describe("duplicateKey", () => {
   });
 
   it("returns null when there is neither a geocode nor a usable address", () => {
-    expect(duplicateKey(listing({ latitude: null, longitude: null, address: "" }))).toBeNull();
+    expect(
+      duplicateKey(listing({ latitude: null, longitude: null, address: "" })),
+    ).toBeNull();
   });
 });

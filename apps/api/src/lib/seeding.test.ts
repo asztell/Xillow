@@ -59,9 +59,9 @@ describe("findDuplicateKeys", () => {
   });
 
   it("does not treat the same id under a different source as a duplicate", () => {
-    expect(findDuplicateKeys([listing(), listing({ source: "MLS_B" })])).toEqual(
-      [],
-    );
+    expect(
+      findDuplicateKeys([listing(), listing({ source: "MLS_B" })]),
+    ).toEqual([]);
   });
 
   it("counts every occurrence and sorts the report by id then source", () => {

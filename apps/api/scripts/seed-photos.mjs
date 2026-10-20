@@ -130,7 +130,9 @@ const planned = entries.map((entry) => {
   const count = seed % 5 === 0 ? 0 : 3 + ((seed >>> 8) % 2); // 3 or 4
   return { entry, seed, count, rng: seed >>> 16 };
 });
-const withPhotos = planned.filter((p) => p.count > 0).sort((a, b) => a.rng - b.rng || a.seed - b.seed);
+const withPhotos = planned
+  .filter((p) => p.count > 0)
+  .sort((a, b) => a.rng - b.rng || a.seed - b.seed);
 const bedroomLeads = Math.round(withPhotos.length * 0.3);
 withPhotos.forEach((p, i) => {
   p.bedroomLead = i < bedroomLeads;
@@ -138,7 +140,9 @@ withPhotos.forEach((p, i) => {
 
 const out = planned.map(({ entry, seed, count, bedroomLead }) => {
   if (count === 0) return { ...entry, photos: [] };
-  const leadPool = bedroomLead ? BEDROOMS : EXTERIORS[bucketFor(entry.bedrooms)];
+  const leadPool = bedroomLead
+    ? BEDROOMS
+    : EXTERIORS[bucketFor(entry.bedrooms)];
   const photos = [pick(leadPool, seed)];
   for (let i = 1; i < count; i += 1) {
     // Step 3 (coprime with the 7-item interior pool) so photos within a

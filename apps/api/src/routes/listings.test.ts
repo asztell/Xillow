@@ -91,7 +91,9 @@ function mostRecentPerGroup(listings: Listing[]): Listing[] {
     }
   }
   const winningIds = new Set(
-    [...winners.values()].map((listing) => `${listing.id}\u0000${listing.source}`),
+    [...winners.values()].map(
+      (listing) => `${listing.id}\u0000${listing.source}`,
+    ),
   );
   return listings.filter((listing) => {
     const key = keyOf(listing);
@@ -111,8 +113,10 @@ class ThrowingListingRepository implements ListingRepository {
 }
 
 function matches(listing: Listing, filter: ListingFilter): boolean {
-  if (filter.minPrice !== undefined && listing.price < filter.minPrice) return false;
-  if (filter.maxPrice !== undefined && listing.price > filter.maxPrice) return false;
+  if (filter.minPrice !== undefined && listing.price < filter.minPrice)
+    return false;
+  if (filter.maxPrice !== undefined && listing.price > filter.maxPrice)
+    return false;
   if (
     filter.minBedrooms !== undefined &&
     (listing.bedrooms ?? 0) < filter.minBedrooms
@@ -127,7 +131,9 @@ function matches(listing: Listing, filter: ListingFilter): boolean {
   }
   if (
     filter.keyword !== undefined &&
-    !(listing.description ?? "").toLowerCase().includes(filter.keyword.toLowerCase())
+    !(listing.description ?? "")
+      .toLowerCase()
+      .includes(filter.keyword.toLowerCase())
   ) {
     return false;
   }
@@ -160,11 +166,46 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 /** Same listedDate everywhere => ordering is driven purely by budget proximity. */
 function sampleListings(): Listing[] {
   return [
-    makeListing({ id: "A1", source: "MLS_A", address: "123 Main St", price: 450000, bedrooms: 2, city: "Springfield" }),
-    makeListing({ id: "A2", source: "MLS_A", address: "456 Oak Ave", price: 525000, bedrooms: 3, city: "Springfield", description: "Fenced yard, pets allowed", latitude: 38.7791, longitude: -77.1901 }),
-    makeListing({ id: "A3", source: "MLS_A", address: "789 Pine Rd", price: 399000, bedrooms: 2, city: "Fairfax", description: "Cozy starter home, no pets", latitude: 38.8462, longitude: -77.3064 }),
+    makeListing({
+      id: "A1",
+      source: "MLS_A",
+      address: "123 Main St",
+      price: 450000,
+      bedrooms: 2,
+      city: "Springfield",
+    }),
+    makeListing({
+      id: "A2",
+      source: "MLS_A",
+      address: "456 Oak Ave",
+      price: 525000,
+      bedrooms: 3,
+      city: "Springfield",
+      description: "Fenced yard, pets allowed",
+      latitude: 38.7791,
+      longitude: -77.1901,
+    }),
+    makeListing({
+      id: "A3",
+      source: "MLS_A",
+      address: "789 Pine Rd",
+      price: 399000,
+      bedrooms: 2,
+      city: "Fairfax",
+      description: "Cozy starter home, no pets",
+      latitude: 38.8462,
+      longitude: -77.3064,
+    }),
     // Same geocode as A1 => flagged as a cross-source duplicate.
-    makeListing({ id: "B7", source: "MLS_B", address: "123 Main Street", price: 452000, bedrooms: 2, city: "Springfield", description: "Top floor condo, pets allowed" }),
+    makeListing({
+      id: "B7",
+      source: "MLS_B",
+      address: "123 Main Street",
+      price: 452000,
+      bedrooms: 2,
+      city: "Springfield",
+      description: "Top floor condo, pets allowed",
+    }),
   ];
 }
 
@@ -173,10 +214,19 @@ describe("GET /api/listings", () => {
     const repo = new FakeListingRepository(sampleListings());
     const app = createApp(repo);
 
-    const res = await request(app).get("/api/listings").query({ targetBudget: 450000 });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ targetBudget: 450000 });
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ page: 1, pageSize: 10, total: 3, totalPages: 1, hasNext: false, hasPrev: false });
+    expect(res.body).toMatchObject({
+      page: 1,
+      pageSize: 10,
+      total: 3,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    });
     expect(res.body.results).toHaveLength(3);
 
     // Sorted by descending score; the near-budget listings come first.
@@ -193,7 +243,9 @@ describe("GET /api/listings", () => {
 
   it("keeps only the most recent row of a duplicate group", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ city: "Springfield" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ city: "Springfield" });
 
     expect(res.status).toBe(200);
     // A1, A2 and B7 match; A1/B7 are the same home, so only the newest (A1) shows.
@@ -214,9 +266,27 @@ describe("GET /api/listings", () => {
   it("applies filters to the group's newest row, hiding the property otherwise", async () => {
     // One three-feed property: A1 (450k), B7 (452k), C8 (448k, newest).
     const listings = [
-      makeListing({ id: "A1", source: "MLS_A", address: "123 Main St", price: 450000, listedDate: "2026-08-29T00:00:00.000Z" }),
-      makeListing({ id: "B7", source: "MLS_B", address: "123 Main Street", price: 452000, listedDate: "2026-08-27T00:00:00.000Z" }),
-      makeListing({ id: "C8", source: "MLS_C", address: "123 Main Street", price: 448000, listedDate: "2026-09-08T00:00:00.000Z" }),
+      makeListing({
+        id: "A1",
+        source: "MLS_A",
+        address: "123 Main St",
+        price: 450000,
+        listedDate: "2026-08-29T00:00:00.000Z",
+      }),
+      makeListing({
+        id: "B7",
+        source: "MLS_B",
+        address: "123 Main Street",
+        price: 452000,
+        listedDate: "2026-08-27T00:00:00.000Z",
+      }),
+      makeListing({
+        id: "C8",
+        source: "MLS_C",
+        address: "123 Main Street",
+        price: 448000,
+        listedDate: "2026-09-08T00:00:00.000Z",
+      }),
     ];
     const app = createApp(new FakeListingRepository(listings));
 
@@ -266,7 +336,9 @@ describe("GET /api/listings", () => {
 
   it("filters by price range", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ minPrice: 400000, maxPrice: 460000 });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ minPrice: 400000, maxPrice: 460000 });
     expect(res.status).toBe(200);
     // The A1/B7 group is represented by A1 (450k); B7 (452k) is dropped before
     // filtering, so only A1 is in range.
@@ -279,14 +351,18 @@ describe("GET /api/listings", () => {
 
   it("filters by city case-insensitively", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ city: "springfield" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ city: "springfield" });
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(2);
   });
 
   it("filters by keyword against the description", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ keyword: "pets" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ keyword: "pets" });
     expect(res.status).toBe(200);
     // The representative of the A1/B7 group is A1, whose description has no
     // "pets"; B7 is dropped before the keyword filter runs, so only A2 and A3
@@ -296,7 +372,9 @@ describe("GET /api/listings", () => {
 
   it("filters by minimum bedrooms", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ minBedrooms: 3 });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ minBedrooms: 3 });
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(1);
     expect(res.body.results[0].bedrooms).toBe(3);
@@ -304,17 +382,23 @@ describe("GET /api/listings", () => {
 
   it("sorts by price ascending when asked", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ sort: "price_asc" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ sort: "price_asc" });
 
     expect(res.status).toBe(200);
     // A1=450k, A2=525k, A3=399k (B7 collapses into A1) -> cheapest first.
-    const prices: number[] = res.body.results.map((l: { price: number }) => l.price);
+    const prices: number[] = res.body.results.map(
+      (l: { price: number }) => l.price,
+    );
     expect(prices).toEqual([399000, 450000, 525000]);
   });
 
   it("rejects an unknown sort value with 400", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ sort: "popular" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ sort: "popular" });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("INVALID_QUERY");
     expect(res.body.error.field).toBe("sort");
@@ -323,18 +407,38 @@ describe("GET /api/listings", () => {
   it("paginates and reports page boundaries", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
 
-    const first = await request(app).get("/api/listings").query({ page: 1, pageSize: 2 });
-    expect(first.body).toMatchObject({ page: 1, pageSize: 2, total: 3, totalPages: 2, hasNext: true, hasPrev: false });
+    const first = await request(app)
+      .get("/api/listings")
+      .query({ page: 1, pageSize: 2 });
+    expect(first.body).toMatchObject({
+      page: 1,
+      pageSize: 2,
+      total: 3,
+      totalPages: 2,
+      hasNext: true,
+      hasPrev: false,
+    });
     expect(first.body.results).toHaveLength(2);
 
-    const second = await request(app).get("/api/listings").query({ page: 2, pageSize: 2 });
-    expect(second.body).toMatchObject({ page: 2, pageSize: 2, total: 3, totalPages: 2, hasNext: false, hasPrev: true });
+    const second = await request(app)
+      .get("/api/listings")
+      .query({ page: 2, pageSize: 2 });
+    expect(second.body).toMatchObject({
+      page: 2,
+      pageSize: 2,
+      total: 3,
+      totalPages: 2,
+      hasNext: false,
+      hasPrev: true,
+    });
     expect(second.body.results).toHaveLength(1);
   });
 
   it("returns an empty page when paging past the end", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ page: 99, pageSize: 2 });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ page: 99, pageSize: 2 });
     expect(res.status).toBe(200);
     expect(res.body.results).toEqual([]);
     expect(res.body.total).toBe(3);
@@ -343,15 +447,24 @@ describe("GET /api/listings", () => {
 
   it("returns a clean empty result (not an error) when nothing matches", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ city: "Atlantis" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ city: "Atlantis" });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ total: 0, totalPages: 0, hasNext: false, hasPrev: false });
+    expect(res.body).toMatchObject({
+      total: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrev: false,
+    });
     expect(res.body.results).toEqual([]);
   });
 
   it("rejects minPrice greater than maxPrice with 400", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ minPrice: 600000, maxPrice: 400000 });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ minPrice: 600000, maxPrice: 400000 });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("INVALID_QUERY");
     expect(res.body.error.field).toBe("minPrice");
@@ -366,7 +479,9 @@ describe("GET /api/listings", () => {
 
   it("rejects a non-numeric price with 400", async () => {
     const app = createApp(new FakeListingRepository(sampleListings()));
-    const res = await request(app).get("/api/listings").query({ minPrice: "lots" });
+    const res = await request(app)
+      .get("/api/listings")
+      .query({ minPrice: "lots" });
     expect(res.status).toBe(400);
     expect(res.body.error.field).toBe("minPrice");
   });
@@ -383,9 +498,27 @@ describe("GET /api/listings/:source/:id", () => {
   /** One three-feed property, newest last-created (C8) but listed first. */
   function threeWayGroup(): Listing[] {
     return [
-      makeListing({ id: "A1", source: "MLS_A", address: "123 Main St", price: 450000, listedDate: "2026-08-29T00:00:00.000Z" }),
-      makeListing({ id: "B7", source: "MLS_B", address: "123 Main Street", price: 452000, listedDate: "2026-08-27T00:00:00.000Z" }),
-      makeListing({ id: "C8", source: "MLS_C", address: "123 Main Street", price: 448000, listedDate: "2026-09-08T00:00:00.000Z" }),
+      makeListing({
+        id: "A1",
+        source: "MLS_A",
+        address: "123 Main St",
+        price: 450000,
+        listedDate: "2026-08-29T00:00:00.000Z",
+      }),
+      makeListing({
+        id: "B7",
+        source: "MLS_B",
+        address: "123 Main Street",
+        price: 452000,
+        listedDate: "2026-08-27T00:00:00.000Z",
+      }),
+      makeListing({
+        id: "C8",
+        source: "MLS_C",
+        address: "123 Main Street",
+        price: 448000,
+        listedDate: "2026-09-08T00:00:00.000Z",
+      }),
     ];
   }
 
@@ -394,7 +527,11 @@ describe("GET /api/listings/:source/:id", () => {
     const res = await request(app).get("/api/listings/MLS_C/C8");
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ id: "C8", source: "MLS_C", price: 448000 });
+    expect(res.body).toMatchObject({
+      id: "C8",
+      source: "MLS_C",
+      price: 448000,
+    });
 
     expect(res.body.sources.map((s: ListingSource) => s.id)).toEqual([
       "C8",
@@ -420,13 +557,18 @@ describe("GET /api/listings/:source/:id", () => {
       "B7",
     ]);
     expect(res.body.sources[0].isCurrent).toBe(true);
-    expect(res.body.sources.find((s: ListingSource) => s.id === "B7").isCurrent).toBe(
-      false,
-    );
+    expect(
+      res.body.sources.find((s: ListingSource) => s.id === "B7").isCurrent,
+    ).toBe(false);
   });
 
   it("returns a single source for a listing with no duplicates", async () => {
-    const solo = makeListing({ id: "A9", source: "MLS_A", latitude: 40, longitude: -80 });
+    const solo = makeListing({
+      id: "A9",
+      source: "MLS_A",
+      latitude: 40,
+      longitude: -80,
+    });
     const app = createApp(new FakeListingRepository([solo]));
     const res = await request(app).get("/api/listings/MLS_A/A9");
 

@@ -33,7 +33,8 @@ export function ListingPhoto({
     // Already showing the last resort - stop so a failing image cannot loop.
     if (img.src === generated) return;
     img.alt = "";
-    img.src = img.src === PLACEHOLDER_IMAGE_URL ? generated : PLACEHOLDER_IMAGE_URL;
+    img.src =
+      img.src === PLACEHOLDER_IMAGE_URL ? generated : PLACEHOLDER_IMAGE_URL;
   };
 
   return (

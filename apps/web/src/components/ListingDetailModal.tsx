@@ -80,7 +80,9 @@ function LoadedDetail({
 }) {
   const current = data.sources.find((row) => row.isCurrent);
   const isNewest =
-    current !== undefined && current.id === data.id && current.source === data.source;
+    current !== undefined &&
+    current.id === data.id &&
+    current.source === data.source;
 
   return (
     <>
@@ -104,13 +106,22 @@ function LoadedDetail({
         </p>
 
         <div className="detail-stats">
-          <Stat label="beds" value={data.bedrooms === null ? DASH : String(data.bedrooms)} />
+          <Stat
+            label="beds"
+            value={data.bedrooms === null ? DASH : String(data.bedrooms)}
+          />
           <Stat
             label="baths"
             value={data.bathrooms === null ? DASH : String(data.bathrooms)}
           />
-          <Stat label="sqft" value={data.sqft === null ? DASH : String(data.sqft)} />
-          <Stat label="listed" value={new Date(data.listedDate).toLocaleDateString()} />
+          <Stat
+            label="sqft"
+            value={data.sqft === null ? DASH : String(data.sqft)}
+          />
+          <Stat
+            label="listed"
+            value={new Date(data.listedDate).toLocaleDateString()}
+          />
         </div>
 
         {data.description && (
@@ -119,7 +130,8 @@ function LoadedDetail({
 
         {current && !isNewest && (
           <p className="detail-newer">
-            A newer listing for this property is available from {current.source}.
+            A newer listing for this property is available from {current.source}
+            .
             <button
               type="button"
               className="detail-newer-link"

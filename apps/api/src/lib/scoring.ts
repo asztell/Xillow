@@ -57,7 +57,9 @@ export function recencyScore(
   // `Date.parse` avoids allocating a `Date` per row on the scoring hot path; it
   // returns NaN for an unparseable value, which the guard below turns into 0.
   const listedMs =
-    typeof listedDate === "string" ? Date.parse(listedDate) : listedDate.getTime();
+    typeof listedDate === "string"
+      ? Date.parse(listedDate)
+      : listedDate.getTime();
   if (!Number.isFinite(listedMs)) {
     return 0;
   }

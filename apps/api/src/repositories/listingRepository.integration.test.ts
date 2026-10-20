@@ -16,7 +16,10 @@ import { KyselyListingRepository } from "./listingRepository";
  */
 
 const databaseUrl = process.env.DATABASE_URL;
-const schemaSql = readFileSync(join(__dirname, "..", "..", "schema.sql"), "utf8");
+const schemaSql = readFileSync(
+  join(__dirname, "..", "..", "schema.sql"),
+  "utf8",
+);
 
 function listing(overrides: Partial<SampleListing> = {}): SampleListing {
   return {
@@ -45,10 +48,36 @@ function listing(overrides: Partial<SampleListing> = {}): SampleListing {
  * non-newest siblings.
  */
 const SAMPLE: SampleListing[] = [
-  listing({ id: "A1", source: "MLS_A", address: "123 Main St, Apt 4B", price: 450000, listedDate: "2026-08-29" }),
-  listing({ id: "B7", source: "MLS_B", address: "123 Main Street, Unit 4B", price: 452000, listedDate: "2026-08-27" }),
-  listing({ id: "C8", source: "MLS_C", address: "123 Main Street, Apt 4B", price: 448000, listedDate: "2026-09-08" }),
-  listing({ id: "A2", source: "MLS_A", address: "456 Oak Ave", price: 525000, latitude: 38.7791, longitude: -77.1901, listedDate: "2026-09-02" }),
+  listing({
+    id: "A1",
+    source: "MLS_A",
+    address: "123 Main St, Apt 4B",
+    price: 450000,
+    listedDate: "2026-08-29",
+  }),
+  listing({
+    id: "B7",
+    source: "MLS_B",
+    address: "123 Main Street, Unit 4B",
+    price: 452000,
+    listedDate: "2026-08-27",
+  }),
+  listing({
+    id: "C8",
+    source: "MLS_C",
+    address: "123 Main Street, Apt 4B",
+    price: 448000,
+    listedDate: "2026-09-08",
+  }),
+  listing({
+    id: "A2",
+    source: "MLS_A",
+    address: "456 Oak Ave",
+    price: 525000,
+    latitude: 38.7791,
+    longitude: -77.1901,
+    listedDate: "2026-09-02",
+  }),
 ];
 
 function withDatabase(connectionString: string, database: string): string {
@@ -58,7 +87,10 @@ function withDatabase(connectionString: string, database: string): string {
 }
 
 async function canConnect(connectionString: string): Promise<boolean> {
-  const client = new Client({ connectionString, connectionTimeoutMillis: 2000 });
+  const client = new Client({
+    connectionString,
+    connectionTimeoutMillis: 2000,
+  });
   try {
     await client.connect();
     return true;
@@ -94,7 +126,9 @@ describe("KyselyListingRepository primary selection (integration)", () => {
       await create.end();
     }
 
-    const pool = new Pool({ connectionString: withDatabase(connectionString, dbName) });
+    const pool = new Pool({
+      connectionString: withDatabase(connectionString, dbName),
+    });
     const db = createDb(pool);
 
     try {
@@ -109,17 +143,27 @@ describe("KyselyListingRepository primary selection (integration)", () => {
       expect(idsOf(await repo.find({})).sort()).toEqual(["A2", "C8"]);
 
       // The representative (C8, 448k) is in range.
-      expect(idsOf(await repo.find({ minPrice: 448000, maxPrice: 452000 }))).toEqual(["C8"]);
+      expect(
+        idsOf(await repo.find({ minPrice: 448000, maxPrice: 452000 })),
+      ).toEqual(["C8"]);
 
       // A1 (450k) and B7 (452k) are in range but are not the representative, so
       // the property is hidden rather than shown as an older sibling.
-      expect(await repo.find({ minPrice: 450000, maxPrice: 452000 })).toEqual([]);
-      expect(await repo.find({ minPrice: 452000, maxPrice: 452000 })).toEqual([]);
+      expect(await repo.find({ minPrice: 450000, maxPrice: 452000 })).toEqual(
+        [],
+      );
+      expect(await repo.find({ minPrice: 452000, maxPrice: 452000 })).toEqual(
+        [],
+      );
 
       // findDetail returns the row plus every sibling, newest first.
       const detail = await repo.findDetail("C8", "MLS_C");
       expect(detail).not.toBeNull();
-      expect(detail).toMatchObject({ id: "C8", source: "MLS_C", price: 448000 });
+      expect(detail).toMatchObject({
+        id: "C8",
+        source: "MLS_C",
+        price: 448000,
+      });
       expect(detail!.sources.map((s) => `${s.source}:${s.id}`)).toEqual([
         "MLS_C:C8",
         "MLS_A:A1",

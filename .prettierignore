@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Lockfile is generated; formatting it creates noise with no benefit
+package-lock.json
+
+# Markdown is deliberately excluded: README.md is the spec of record and must not
+# be reflowed, and the AGENTS.md / .opencode files are hand-shaped prose.
+*.md
+
+# Vendored agent/skill content is upstream and must not be hand-edited
+# (see .opencode/SOURCES.md).
+.opencode/
+
+# Local environment files
+.env
+.env.*

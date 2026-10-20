@@ -135,10 +135,9 @@ describe("sortListings", () => {
       row({ id: "B2", source: "MLS_B", price: 500000 }),
       row({ id: "A9", source: "MLS_A", price: 500000 }),
     ];
-    expect(sortListings(rows, "price_desc").map((r) => `${r.id}:${r.source}`)).toEqual([
-      "A9:MLS_A",
-      "B2:MLS_B",
-    ]);
+    expect(
+      sortListings(rows, "price_desc").map((r) => `${r.id}:${r.source}`),
+    ).toEqual(["A9:MLS_A", "B2:MLS_B"]);
   });
 
   it("keeps the recommended (score) ordering", () => {

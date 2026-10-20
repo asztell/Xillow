@@ -83,8 +83,11 @@ export function parseListingsQuery(params: URLSearchParams): ListingsQuery {
     sort: readSort(params),
     page: readNumber(params, "page", { integer: true, min: 1 }) ?? DEFAULT_PAGE,
     pageSize:
-      readNumber(params, "pageSize", { integer: true, min: 1, max: MAX_PAGE_SIZE }) ??
-      DEFAULT_PAGE_SIZE,
+      readNumber(params, "pageSize", {
+        integer: true,
+        min: 1,
+        max: MAX_PAGE_SIZE,
+      }) ?? DEFAULT_PAGE_SIZE,
     detail: readDetail(params),
   };
 }
@@ -100,7 +103,9 @@ function readDetail(params: URLSearchParams): ListingRef | undefined {
 function readSort(params: URLSearchParams): SortKey | undefined {
   const raw = params.get("sort")?.trim();
   if (raw === undefined) return undefined;
-  return (SORT_KEYS as readonly string[]).includes(raw) ? (raw as SortKey) : undefined;
+  return (SORT_KEYS as readonly string[]).includes(raw)
+    ? (raw as SortKey)
+    : undefined;
 }
 
 /** Serializes an applied query to URL params in a stable, readable order. */
@@ -116,7 +121,8 @@ export function toSearchParams(query: ListingsQuery): URLSearchParams {
   if (query.city) params.set("city", query.city);
   if (query.keyword) params.set("keyword", query.keyword);
   setNumber("targetBudget", query.targetBudget);
-  if (query.sort && query.sort !== "recommended") params.set("sort", query.sort);
+  if (query.sort && query.sort !== "recommended")
+    params.set("sort", query.sort);
   params.set("page", String(query.page));
   params.set("pageSize", String(query.pageSize));
 

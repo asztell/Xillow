@@ -28,24 +28,36 @@ describe("validateFilters", () => {
 
   it("allows minPrice equal to maxPrice", () => {
     expect(
-      validateFilters({ ...emptyForm(), minPrice: "500000", maxPrice: "500000" }),
+      validateFilters({
+        ...emptyForm(),
+        minPrice: "500000",
+        maxPrice: "500000",
+      }),
     ).toEqual({});
   });
 
   it("rejects negative prices", () => {
-    expect(validateFilters({ ...emptyForm(), minPrice: "-1" }).minPrice).toBeDefined();
+    expect(
+      validateFilters({ ...emptyForm(), minPrice: "-1" }).minPrice,
+    ).toBeDefined();
   });
 
   it("rejects non-numeric prices", () => {
-    expect(validateFilters({ ...emptyForm(), maxPrice: "cheap" }).maxPrice).toBeDefined();
+    expect(
+      validateFilters({ ...emptyForm(), maxPrice: "cheap" }).maxPrice,
+    ).toBeDefined();
   });
 
   it("rejects a pageSize of zero or less", () => {
-    expect(validateFilters({ ...emptyForm(), pageSize: "0" }).pageSize).toBeDefined();
+    expect(
+      validateFilters({ ...emptyForm(), pageSize: "0" }).pageSize,
+    ).toBeDefined();
   });
 
   it("rejects a pageSize above the maximum", () => {
-    expect(validateFilters({ ...emptyForm(), pageSize: "101" }).pageSize).toBeDefined();
+    expect(
+      validateFilters({ ...emptyForm(), pageSize: "101" }).pageSize,
+    ).toBeDefined();
   });
 
   it("rejects non-integer minBedrooms", () => {
@@ -127,14 +139,16 @@ describe("isFormDirty", () => {
   it("ignores page and sort, which the form does not own", () => {
     const values = formFromQuery(APPLIED);
     expect(isFormDirty(values, { page: 4, pageSize: 10 })).toBe(false);
-    expect(isFormDirty(values, { page: 1, pageSize: 10, sort: "price_asc" })).toBe(
-      false,
-    );
+    expect(
+      isFormDirty(values, { page: 1, pageSize: 10, sort: "price_asc" }),
+    ).toBe(false);
   });
 
   it("stays dirty while the page size is not a valid number", () => {
     // An unparseable draft still differs from the applied value, so Apply stays
     // reachable and submit can surface the validation error.
-    expect(isFormDirty({ ...emptyForm(), pageSize: "abc" }, APPLIED)).toBe(true);
+    expect(isFormDirty({ ...emptyForm(), pageSize: "abc" }, APPLIED)).toBe(
+      true,
+    );
   });
 });

@@ -72,7 +72,11 @@ export function Results({
           Showing {data.results.length} of {data.total} listings
           {isFetching ? " · updating…" : ""}
         </p>
-        <SortSelect value={sort} onChange={onSortChange} disabled={isFetching} />
+        <SortSelect
+          value={sort}
+          onChange={onSortChange}
+          disabled={isFetching}
+        />
       </div>
       <ListingCards listings={data.results} onSelect={onSelect} />
       <Pagination

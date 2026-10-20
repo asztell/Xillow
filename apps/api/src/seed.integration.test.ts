@@ -52,10 +52,7 @@ const SAMPLE: SampleListing[] = [
 ];
 
 /** Points a connection string at a different database on the same server. */
-function withDatabase(
-  connectionString: string,
-  database: string,
-): string {
+function withDatabase(connectionString: string, database: string): string {
   const parsed = new URL(connectionString);
   parsed.pathname = `/${database}`;
   return parsed.toString();
@@ -115,11 +112,15 @@ describe("seed idempotency (integration)", () => {
       await pool.query(schemaSql);
 
       await upsertListings(db, SAMPLE);
-      expect(await scalar(pool, "SELECT count(*)::int AS n FROM listings")).toBe(2);
+      expect(
+        await scalar(pool, "SELECT count(*)::int AS n FROM listings"),
+      ).toBe(2);
 
       // Second run: the upsert must update, not duplicate.
       await upsertListings(db, SAMPLE);
-      expect(await scalar(pool, "SELECT count(*)::int AS n FROM listings")).toBe(2);
+      expect(
+        await scalar(pool, "SELECT count(*)::int AS n FROM listings"),
+      ).toBe(2);
       expect(
         await scalar(
           pool,

@@ -23,7 +23,10 @@ export class ListingApiError extends Error {
 }
 
 /** Builds the request URL, omitting empty filters. */
-export function buildListingsUrl(query: ListingsQuery, base: string = API_BASE): string {
+export function buildListingsUrl(
+  query: ListingsQuery,
+  base: string = API_BASE,
+): string {
   const qs = toSearchParams(query).toString();
   return `${base}/api/listings${qs ? `?${qs}` : ""}`;
 }
@@ -49,12 +52,19 @@ function networkError(): ListingApiError {
  * Performs a request, mapping transport failures and non-2xx responses onto
  * `ListingApiError` so the UI can render a single error state.
  */
-async function requestJson(url: string, signal?: AbortSignal): Promise<unknown> {
+async function requestJson(
+  url: string,
+  signal?: AbortSignal,
+): Promise<unknown> {
   let response: Response;
   try {
-    response = await fetch(url, { signal, headers: { Accept: "application/json" } });
+    response = await fetch(url, {
+      signal,
+      headers: { Accept: "application/json" },
+    });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
     throw networkError();
   }
 
@@ -76,7 +86,11 @@ async function requestJson(url: string, signal?: AbortSignal): Promise<unknown> 
       // Non-JSON error body - keep the generic message.
     }
 
-    throw new ListingApiError(message, { code, status: response.status, field });
+    throw new ListingApiError(message, {
+      code,
+      status: response.status,
+      field,
+    });
   }
 
   return response.json();
@@ -157,7 +171,9 @@ export async function fetchListings(
   signal?: AbortSignal,
   base: string = API_BASE,
 ): Promise<SearchResult> {
-  return parseSearchResult(await requestJson(buildListingsUrl(query, base), signal));
+  return parseSearchResult(
+    await requestJson(buildListingsUrl(query, base), signal),
+  );
 }
 
 /** Fetches one listing plus every feed row for the same property. */

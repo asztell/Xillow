@@ -42,7 +42,8 @@ export function emptyForm(): FilterFormValues {
 }
 
 export function formFromQuery(query: ListingsQuery): FilterFormValues {
-  const asText = (value: number | undefined) => (value === undefined ? "" : String(value));
+  const asText = (value: number | undefined) =>
+    value === undefined ? "" : String(value);
   return {
     minPrice: asText(query.minPrice),
     maxPrice: asText(query.maxPrice),
@@ -96,7 +97,11 @@ export function validateFilters(values: FilterFormValues): FormErrors {
   const maxPrice = checkNumeric("maxPrice", values, errors, { min: 0 });
   checkNumeric("minBedrooms", values, errors, { integer: true, min: 0 });
   checkNumeric("targetBudget", values, errors, { min: 0 });
-  checkNumeric("pageSize", values, errors, { integer: true, min: 1, max: MAX_PAGE_SIZE });
+  checkNumeric("pageSize", values, errors, {
+    integer: true,
+    min: 1,
+    max: MAX_PAGE_SIZE,
+  });
 
   if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
     errors.minPrice = "Min price must be less than or equal to max price.";
@@ -147,7 +152,10 @@ export function countActiveFormFilters(values: FilterFormValues): number {
  * `page` and `sort` are ignored: neither is owned by this form, so a difference
  * there is not something submitting the form would change.
  */
-export function isFormDirty(values: FilterFormValues, query: ListingsQuery): boolean {
+export function isFormDirty(
+  values: FilterFormValues,
+  query: ListingsQuery,
+): boolean {
   const next = queryFromForm(values, DEFAULT_PAGE);
   return (
     next.minPrice !== query.minPrice ||
@@ -161,7 +169,10 @@ export function isFormDirty(values: FilterFormValues, query: ListingsQuery): boo
 }
 
 /** Converts validated form values into an applied query for the given page. */
-export function queryFromForm(values: FilterFormValues, page: number): ListingsQuery {
+export function queryFromForm(
+  values: FilterFormValues,
+  page: number,
+): ListingsQuery {
   const asNumber = (raw: string) => {
     const trimmed = raw.trim();
     return trimmed === "" ? undefined : Number(trimmed);

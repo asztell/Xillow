@@ -79,15 +79,21 @@ export function ListingCards({ listings, onSelect }: ListingCardsProps) {
           <div className="listing-stats">
             <Stat
               label="beds"
-              value={listing.bedrooms === null ? DASH : String(listing.bedrooms)}
+              value={
+                listing.bedrooms === null ? DASH : String(listing.bedrooms)
+              }
             />
             <Stat
               label="baths"
-              value={listing.bathrooms === null ? DASH : String(listing.bathrooms)}
+              value={
+                listing.bathrooms === null ? DASH : String(listing.bathrooms)
+              }
             />
             <Stat
               label="sqft"
-              value={listing.sqft === null ? DASH : listing.sqft.toLocaleString()}
+              value={
+                listing.sqft === null ? DASH : listing.sqft.toLocaleString()
+              }
             />
           </div>
         </article>

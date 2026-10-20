@@ -2,7 +2,9 @@
 #
 # Context-efficient gate: keep the passing case out of the agent's context.
 #
-# Runs typecheck, then the full test suite across every workspace.
+# Runs the linter, then the format check, then typecheck, then the full test
+# suite across every workspace. Cheapest and most mechanical first, so a lint
+# slip, a formatting problem, or a type error never costs a test run.
 #
 #   success -> a single "✓" line
 #   failure -> the real output, because only the failure is useful
@@ -26,7 +28,7 @@ if [ "$require_db" = "1" ] && [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-out=$( { npm run typecheck && npm test; } 2>&1 )
+out=$( { npm run lint && npm run format:check && npm run typecheck && npm test; } 2>&1 )
 code=$?
 
 if [ "$code" -ne 0 ]; then
@@ -43,4 +45,4 @@ if [ "$require_db" = "1" ] && printf '%s' "$out" | grep -q 'skipped'; then
   exit 1
 fi
 
-echo "✓ typecheck + tests"
+echo "✓ lint + format + typecheck + tests"

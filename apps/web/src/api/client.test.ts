@@ -57,9 +57,9 @@ describe("buildListingDetailUrl", () => {
   });
 
   it("respects a base URL and escapes unsafe characters", () => {
-    expect(buildListingDetailUrl("MLS A", "a/b", "https://api.example.com")).toBe(
-      "https://api.example.com/api/listings/MLS%20A/a%2Fb",
-    );
+    expect(
+      buildListingDetailUrl("MLS A", "a/b", "https://api.example.com"),
+    ).toBe("https://api.example.com/api/listings/MLS%20A/a%2Fb");
   });
 });
 
@@ -91,10 +91,13 @@ describe("fetchListingDetail", () => {
 
   it("rejects a payload without a non-empty sources list", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ id: "A1", source: "MLS_A", price: 1, sources: [] }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify({ id: "A1", source: "MLS_A", price: 1, sources: [] }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
     );
 
     await expect(fetchListingDetail("MLS_A", "A1")).rejects.toMatchObject({
@@ -122,7 +125,9 @@ describe("fetchListingDetail", () => {
   });
 
   it("maps a transport failure to a NETWORK_ERROR", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
     await expect(fetchListingDetail("MLS_A", "A1")).rejects.toMatchObject({
       code: "NETWORK_ERROR",
     });
@@ -147,7 +152,9 @@ describe("fetchListings", () => {
       }),
     );
 
-    await expect(fetchListings({ page: 1, pageSize: 10 })).resolves.toEqual(body);
+    await expect(fetchListings({ page: 1, pageSize: 10 })).resolves.toEqual(
+      body,
+    );
   });
 
   it("rejects a malformed success body at the boundary", async () => {
@@ -158,7 +165,9 @@ describe("fetchListings", () => {
       }),
     );
 
-    await expect(fetchListings({ page: 1, pageSize: 10 })).rejects.toMatchObject({
+    await expect(
+      fetchListings({ page: 1, pageSize: 10 }),
+    ).rejects.toMatchObject({
       name: "ListingApiError",
       code: "INVALID_RESPONSE",
     });
@@ -176,7 +185,9 @@ describe("fetchListings", () => {
       new Response(JSON.stringify(body), { status: 400 }),
     );
 
-    await expect(fetchListings({ page: 1, pageSize: 10 })).rejects.toMatchObject({
+    await expect(
+      fetchListings({ page: 1, pageSize: 10 }),
+    ).rejects.toMatchObject({
       name: "ListingApiError",
       status: 400,
       field: "minPrice",
@@ -189,14 +200,18 @@ describe("fetchListings", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("boom", { status: 500 }),
     );
-    await expect(fetchListings({ page: 1, pageSize: 10 })).rejects.toBeInstanceOf(
-      ListingApiError,
-    );
+    await expect(
+      fetchListings({ page: 1, pageSize: 10 }),
+    ).rejects.toBeInstanceOf(ListingApiError);
   });
 
   it("maps a transport failure to a NETWORK_ERROR", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
-    await expect(fetchListings({ page: 1, pageSize: 10 })).rejects.toMatchObject({
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    await expect(
+      fetchListings({ page: 1, pageSize: 10 }),
+    ).rejects.toMatchObject({
       code: "NETWORK_ERROR",
     });
   });

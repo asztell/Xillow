@@ -188,4 +188,3 @@ export function SearchForm({
     </form>
   );
 }
-

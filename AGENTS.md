@@ -8,9 +8,11 @@ model, and trade-off rationale rather than duplicating it here.
 ## Commands
 
 ```bash
-npm run gate                            # typecheck + full suite; one line on success
+npm run gate                            # lint + format + typecheck + suite; one line on success
 npm run typecheck                       # all workspaces
 npm test                                # all workspaces
+npm run lint                            # oxlint (correctness rules fail the run)
+npm run format                          # prettier --write across the repo
 npm run build
 
 npm run dev                             # api + web concurrently
@@ -32,6 +34,11 @@ npm run docker:reset                    # down -v, destroys the volume
 failure. Prefer it over `npm test` — a passing suite in this repo is ~180 lines
 of noise. Set `GATE_REQUIRE_DB=1` to fail when the api integration tests are
 skipped, which is how CI asserts they really ran.
+
+Lint is **oxlint**, not ESLint: `typescript-eslint` hard-requires the TypeScript
+JS compiler API, and `typescript@7` ships only the `tsc` binary. Do not add
+`eslint` — it cannot parse this repo. Formatting is Prettier; `.prettierignore`
+excludes markdown (README.md is the spec of record) and `.opencode/` (vendored).
 
 ## Ground rules
 
