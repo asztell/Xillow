@@ -18,6 +18,12 @@ permissions:
     resource: "npm run typecheck*"
     effect: allow
   - action: shell
+    resource: "npm run lint*"
+    effect: allow
+  - action: shell
+    resource: "npm run format:check*"
+    effect: allow
+  - action: shell
     resource: "git diff*"
     effect: allow
   - action: shell
