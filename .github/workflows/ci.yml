@@ -1,0 +1,63 @@
+name: CI
+
+# The only hard gate in this repo. Everything under .opencode/ (AGENTS.md,
+# agents, skills, commands) is advisory steering; this workflow is what
+# actually blocks a broken change from merging.
+#
+# Runs the same `npm run gate` the `qa` agent and /qa use locally, so "green
+# locally" and "green in CI" mean the same thing.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: typecheck + tests
+    runs-on: ubuntu-latest
+
+    services:
+      # Matches compose.yml. The api integration tests create their own scratch
+      # database and apply schema.sql themselves, so nothing else needs seeding.
+      # The POSTGRES_USER below is a superuser, which is required for CREATEDB.
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: xillow
+          POSTGRES_PASSWORD: xillow
+          POSTGRES_DB: xillow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xillow -d xillow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://xillow:xillow@localhost:5432/xillow
+      # Fail if the integration tests self-skip instead of silently passing.
+      GATE_REQUIRE_DB: "1"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # Matches Dockerfile (node:24-alpine) and satisfies engines >= 20.
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run gate
+
+      - name: Build
+        run: npm run build
