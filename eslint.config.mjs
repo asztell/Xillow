@@ -3,6 +3,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import prettier from "eslint-config-prettier";
 import globals from "globals";
 
@@ -58,6 +59,14 @@ export default tseslint.config(
     files: ["apps/web/**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
     rules: reactHooks.configs["recommended-latest"].rules,
+  },
+
+  {
+    // The UI has a lightbox, a carousel, and two overlays; accessibility is a
+    // stated invariant in apps/web/AGENTS.md, so it is linted, not reviewed
+    // by eye.
+    files: ["apps/web/**/*.{ts,tsx}"],
+    ...jsxA11y.flatConfigs.recommended,
   },
 
   // Plain JS: config files and the photo seeding script. No project, no types.
