@@ -19,6 +19,7 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "gate": "bash scripts/gate.sh",
     "docker:up": "docker compose up --build",
     "docker:up:detached": "docker compose up --build -d",
     "docker:down": "docker compose down",
