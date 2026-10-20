@@ -1,5 +1,5 @@
 ---
-description: Run typecheck and the test suite, report the facts
+description: Run the gate and report the facts
 agent: qa
 ---
 
