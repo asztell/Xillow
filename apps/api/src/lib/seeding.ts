@@ -1,6 +1,5 @@
 import type { Kysely } from "kysely";
 import type { Database } from "../db";
-import type { Listing } from "../types";
 import { duplicateKey } from "./dedupe";
 
 /**
@@ -170,7 +169,7 @@ function toRow(listing: SampleListing) {
     status: listing.status,
     description: listing.description,
     photos: listing.photos ?? [],
-    dup_key: duplicateKey(listing as Listing),
+    dup_key: duplicateKey(listing),
   };
 }
 

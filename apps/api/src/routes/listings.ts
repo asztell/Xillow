@@ -17,7 +17,7 @@ export function createListingsRouter(repo: ListingRepository): Router {
   const router = Router();
 
   router.get("/", async (req: Request, res: Response) => {
-    const parsed = parseSearchParams(req.query as Record<string, unknown>);
+    const parsed = parseSearchParams(req.query);
 
     if (!parsed.ok) {
       const body: ApiError = {

@@ -40,9 +40,9 @@ function reportDuplicateKeys(listings: SampleListing[]): number {
 }
 
 async function main(): Promise<void> {
-  const listings: SampleListing[] = JSON.parse(
+  const listings = JSON.parse(
     readFileSync(join(projectRoot, "sample_listings.json"), "utf8"),
-  );
+  ) as SampleListing[];
   const schemaSql = readFileSync(join(projectRoot, "schema.sql"), "utf8");
 
   const duplicateCount = reportDuplicateKeys(listings);
