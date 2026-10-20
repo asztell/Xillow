@@ -191,6 +191,78 @@ describe("listing detail overlay", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("lists every photo in the lightbox strip and opens the clicked one", async () => {
+    const photos = Array.from(
+      { length: 6 },
+      (_, i) => `https://example.test/photo-${i + 1}.jpg`,
+    );
+    handleListings(() => page({ results: [scored({ photos })] }));
+    handleDetail(() => detail({ photos }));
+
+    renderApp();
+    const detailDialog = await openFromCard();
+
+    await userEvent.click(
+      within(detailDialog).getByRole("button", { name: /open photo gallery/i }),
+    );
+
+    const lightbox = await screen.findByRole("dialog", { name: "1 of 6" });
+    const thumbs = within(lightbox).getAllByRole("button", {
+      name: /show photo \d of 6/i,
+    });
+
+    expect(thumbs).toHaveLength(6);
+    expect(thumbs[0]).toHaveAttribute("aria-current", "true");
+
+    await userEvent.click(thumbs[3]);
+
+    // The counter, the enlarged image and the marker all follow the click.
+    expect(screen.getByRole("dialog", { name: "4 of 6" })).toBeInTheDocument();
+    expect(thumbs[3]).toHaveAttribute("aria-current", "true");
+    expect(thumbs[0]).not.toHaveAttribute("aria-current");
+    expect(
+      within(lightbox).getByRole("img", { name: /photo 4 of 6/i }),
+    ).toHaveAttribute("src", photos[3]);
+  });
+
+  it("offers strip chevrons only when the thumbnails overflow", async () => {
+    const photos = Array.from(
+      { length: 8 },
+      (_, i) => `https://example.test/photo-${i + 1}.jpg`,
+    );
+    handleListings(() => page({ results: [scored({ photos })] }));
+    handleDetail(() => detail({ photos }));
+
+    renderApp();
+    const detailDialog = await openFromCard();
+    await userEvent.click(
+      within(detailDialog).getByRole("button", { name: /open photo gallery/i }),
+    );
+
+    const lightbox = await screen.findByRole("dialog", { name: "1 of 8" });
+    const strip = within(lightbox).getByRole("group", {
+      name: /all 8 photos/i,
+    });
+
+    // jsdom has no layout, so supply the two numbers the overflow check reads.
+    Object.defineProperty(strip, "scrollWidth", {
+      configurable: true,
+      value: 800,
+    });
+    Object.defineProperty(strip, "clientWidth", {
+      configurable: true,
+      value: 400,
+    });
+    fireEvent.scroll(strip);
+
+    expect(
+      within(lightbox).getByRole("button", { name: /scroll photos left/i }),
+    ).toBeDisabled();
+    expect(
+      within(lightbox).getByRole("button", { name: /scroll photos right/i }),
+    ).toBeEnabled();
+  });
+
   it("deep-links straight to the overlay and closes on Escape", async () => {
     handleListings();
     handleDetail(() => detail());
