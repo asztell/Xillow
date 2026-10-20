@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# Pre-push guard: the free substitute for required status checks.
+#
+# GitHub only offers branch protection — required checks and rulesets — for
+# private repositories on a paid plan. This hook is the local equivalent for the
+# one branch that matters: a push that would update `main` runs the full gate
+# first and aborts if it fails. Feature branches are left to CI, which runs on
+# every push anyway.
+#
+# It is installed by the root `prepare` script (`git config core.hooksPath
+# .githooks`) on every `npm install`, and bypassed by `git push --no-verify` —
+# which OpenCode is configured to deny in .opencode/opencode.json.
+set -uo pipefail
+
+pushing_main=false
+
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  # Deleting a branch sends the all-zero sha; there is nothing to verify.
+  case "$local_sha" in
+    0000000000000000000000000000000000000000) continue ;;
+  esac
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    pushing_main=true
+  fi
+done
+
+if [ "$pushing_main" = false ]; then
+  exit 0
+fi
+
+echo "pre-push: running the gate before updating main…" >&2
+if ! npm run gate >&2; then
+  echo "pre-push: gate failed; main was not pushed." >&2
+  exit 1
+fi

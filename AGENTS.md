@@ -40,6 +40,17 @@ failure. Prefer it over `npm test` — a passing suite in this repo is ~180 line
 of noise. Set `GATE_REQUIRE_DB=1` to fail when the api integration tests are
 skipped, which is how CI asserts they really ran.
 
+**`main` is protected, and the gate runs before it moves.** The repository is
+public, so branch protection is free: `main` accepts only PRs whose
+`lint + format + typecheck + tests` check is green and up to date, and rejects
+direct pushes, force-pushes and deletions for administrators too. Locally,
+`.githooks/pre-push` additionally runs the gate for any push that would update
+`main`; `npm install` installs it via the root `prepare` script
+(`git config core.hooksPath .githooks`). Feature branches are left to CI, which
+runs on every push, and a `main guard` workflow opens an issue if `main` goes
+red anyway. `git push --no-verify` bypasses the hook, so OpenCode denies that
+command (`.opencode/opencode.json`); do not work around it.
+
 Lint is **ESLint** with `typescript-eslint` type-aware rules; config is
 `eslint.config.mjs` at the root. Formatting is Prettier; `.prettierignore`
 excludes markdown (README.md is the spec of record) and `.opencode/` (vendored).
