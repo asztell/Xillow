@@ -98,6 +98,31 @@ const BEDROOMS = [
   "1590490360182-c33d57733427", // soft-toned bedroom
 ].map(U);
 
+/**
+ * Hand-picked extras for listings that need a fuller gallery, keyed by
+ * `source:id`. Appended after the generated photos, so the lead shot - and the
+ * card strip that shows it - stays exactly as it was.
+ *
+ * C1 is the 4-bed / 3.5-bath waterfront-adjacent family home. The extras cover
+ * what the description promises: two exteriors, two yards, living, dining,
+ * kitchen, a main-level bedroom, a bathroom, and the terrace that opens onto
+ * the water.
+ */
+const CURATED_EXTRAS = {
+  "MLS_C:C1": [
+    "1583608205776-bfd35f0d9f83", // grey family home with double gables
+    "1600585154526-990dced4db0d", // timber home, driveway, dog at the door
+    "1600607688969-a5bfcd646154", // new-build exterior, lawn and trees
+    "1600607688960-e095ff83135c", // covered terrace and back lawn
+    "1600573472550-8090b5e0745e", // living room opening onto the pool
+    "1600566752229-250ed79470f8", // white kitchen with island
+    "1600607687920-4e2a09cf159d", // dining area under the staircase
+    "1600607687644-c7171b42498f", // bedroom with glass doors to the garden
+    "1600566753190-17f0baa2a6c3", // bathroom with freestanding tub
+    "1600566753086-00f18fb6b3ea", // living room with stairs, dog on the floor
+  ].map(U),
+};
+
 function hash(value) {
   let h = 0;
   for (let i = 0; i < value.length; i += 1) {
@@ -149,6 +174,7 @@ const out = planned.map(({ entry, seed, count, bedroomLead }) => {
     // listing never repeat.
     photos.push(pick(INTERIORS, seed + i * 3));
   }
+  photos.push(...(CURATED_EXTRAS[`${entry.source}:${entry.id}`] ?? []));
   return { ...entry, photos };
 });
 writeFileSync(FILE, `${JSON.stringify(out, null, 2)}\n`);
@@ -157,8 +183,7 @@ const summary = {
   total: out.length,
   withPhotos: 0,
   withoutPhotos: 0,
-  count3: 0,
-  count4: 0,
+  counts: {},
   bedroomLead: 0,
   exteriorLead: 0,
 };
@@ -168,14 +193,18 @@ for (const entry of out) {
   if (n === 0) summary.withoutPhotos += 1;
   else {
     summary.withPhotos += 1;
-    summary[n === 3 ? "count3" : "count4"] += 1;
+    summary.counts[n] = (summary.counts[n] ?? 0) + 1;
     if (BEDROOM_URLS.has(entry.photos[0])) summary.bedroomLead += 1;
     else summary.exteriorLead += 1;
   }
 }
+const counts = Object.entries(summary.counts)
+  .sort(([a], [b]) => Number(a) - Number(b))
+  .map(([n, listings]) => `${listings}×${n}`)
+  .join(", ");
 console.log(`wrote ${summary.total} listings`);
 console.log(
-  `photos: ${summary.withPhotos} listings (${summary.count3}×3, ${summary.count4}×4), ${summary.withoutPhotos} without`,
+  `photos: ${summary.withPhotos} listings (${counts}), ${summary.withoutPhotos} without`,
 );
 console.log(
   `leads: ${summary.exteriorLead} exterior, ${summary.bedroomLead} bedroom (${Math.round((summary.bedroomLead / summary.withPhotos) * 100)}% of photo listings)`,
