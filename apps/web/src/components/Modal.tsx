@@ -60,6 +60,22 @@ export function Modal({
     };
   }, []);
 
+  // Backdrop dismissal. This is a pointer-only convenience with a keyboard
+  // equivalent (Esc, via `onCancel`), so it is attached to the element rather
+  // than exposed as a JSX handler on a non-interactive `<dialog>`.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const handleClick = (event: MouseEvent) => {
+      // A backdrop click lands on the <dialog> element itself, not its content.
+      if (event.target === dialog) onClose();
+    };
+
+    dialog.addEventListener("click", handleClick);
+    return () => dialog.removeEventListener("click", handleClick);
+  }, [onClose]);
+
   return (
     <dialog
       ref={dialogRef}
@@ -70,10 +86,6 @@ export function Modal({
         // Esc: block the native close so the parent owns the dismissal.
         event.preventDefault();
         onClose();
-      }}
-      onClick={(event) => {
-        // A backdrop click lands on the <dialog> element itself, not its content.
-        if (event.target === dialogRef.current) onClose();
       }}
     >
       {children}

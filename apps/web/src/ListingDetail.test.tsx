@@ -208,6 +208,28 @@ describe("listing detail overlay", () => {
     );
   });
 
+  it("closes on a backdrop click but not on a click inside the content", async () => {
+    handleListings();
+    handleDetail(() => detail());
+
+    renderApp({ initialEntries: ["/?listingSource=MLS_A&listingId=A1"] });
+    const dialog = await screen.findByRole("dialog", {
+      name: new RegExp(ADDRESS),
+    });
+
+    // Clicks inside the content bubble to the dialog; the guard must ignore
+    // them or every interaction would dismiss the overlay.
+    fireEvent.click(within(dialog).getByText(ADDRESS));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    // A click whose target *is* the dialog element is a backdrop click.
+    fireEvent.click(dialog);
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
   it("closes from the close control", async () => {
     handleListings();
     handleDetail(() => detail());

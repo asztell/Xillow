@@ -31,10 +31,11 @@
     "backfill:dup-key": "dotenv -e .env.local -e .env -- tsx apps/api/src/backfill-dup-key.ts"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.5",
     "concurrently": "^10.0.6",
-    "eslint": "^10.13.0",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",

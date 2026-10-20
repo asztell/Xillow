@@ -34,6 +34,12 @@ export function ListingCards({ listings, onSelect }: ListingCardsProps) {
   return (
     <div className="listing-grid" aria-label="Listings">
       {listings.map((listing) => (
+        // The card body is a pointer convenience, not a control: the address
+        // `<button>` below is the keyboard-reachable, named affordance for the
+        // same action. Giving the article `role="button"` would nest it around
+        // that real button, which is worse for screen readers than leaving the
+        // article non-interactive.
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
         <article
           className="listing-card"
           key={`${listing.source}:${listing.id}`}
