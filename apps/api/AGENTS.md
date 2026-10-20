@@ -43,6 +43,9 @@ the code, so preserve them:
 - `photos` is a Postgres array. `dup_key` identifies the same property across
   feeds; see `lib/dedupe.ts` for how canonical rows are chosen.
 
+For query patterns, dedupe/representative semantics, upserts, and the
+scratch-database integration-test scaffold, load the `postgres-kysely` skill.
+
 ## SQL injection review points
 
 `lib/search.ts` and `lib/sorting.ts` translate user-supplied query params into
