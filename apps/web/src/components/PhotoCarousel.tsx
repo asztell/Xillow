@@ -18,6 +18,9 @@ interface PhotoCarouselProps {
  * if even that cannot be fetched, to a generated, network-free SVG - so the
  * media slot is never empty and the card layout stays stable. The fallback
  * chain lives in `ListingPhoto`, which the detail mosaic and lightbox reuse.
+ *
+ * The chevrons stop click propagation: the card around this strip opens the
+ * detail overlay, and only the controls should be exempt from that.
  */
 export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
   const [index, setIndex] = useState(0);
@@ -41,8 +44,16 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
     );
   }
 
-  const prev = () => setIndex((i) => (i - 1 + count) % count);
-  const next = () => setIndex((i) => (i + 1) % count);
+  // The chevrons are the one part of a card that must not open the detail
+  // overlay, so their clicks do not bubble up to the card's handler.
+  const prev = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIndex((i) => (i - 1 + count) % count);
+  };
+  const next = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIndex((i) => (i + 1) % count);
+  };
   const altText = count > 1 ? `${alt} – photo ${current + 1} of ${count}` : alt;
 
   return (

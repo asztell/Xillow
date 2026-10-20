@@ -401,6 +401,13 @@ button:disabled {
   border-radius: 8px;
   /* Clips the full-bleed photo strip to the card's rounded corners. */
   overflow: hidden;
+  /* The whole card opens the detail overlay. */
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.listing-card:hover {
+  border-color: var(--accent);
 }
 
 .listing-card-top {
