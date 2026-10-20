@@ -15,16 +15,13 @@ npm run build -w @xillow/web      # tsc --noEmit && vite build
 
 ## Structure
 
-```text
-src/
-├── main.tsx            # React root + providers
-├── App.tsx, routes.tsx # react-router route tree
-├── api/client.ts       # fetch wrappers + runtime response validation
-├── hooks/              # useListings, useListingDetail, useFilterPanel, useListingQuery
-├── lib/                # query.ts (URL<->state), form.ts, format.ts, storage.ts
-├── components/         # presentational, no data fetching
-└── test/               # renderApp.tsx, server.ts (msw), setup.ts
-```
+Placement rules that are not obvious from listing the directories:
+
+- `src/lib/` is pure: URL↔state conversion (`query.ts`), form dirty-tracking
+  (`form.ts`), formatting (`format.ts`), storage (`storage.ts`). Keep it free of
+  React and network calls.
+- Server state belongs in `src/hooks/`; `src/components/` is presentational.
+- `src/test/` holds the `renderApp` helper and the msw server.
 
 ## Conventions
 

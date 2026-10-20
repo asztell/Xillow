@@ -35,6 +35,9 @@ Source directory: [`github/awesome-copilot/agents`](https://github.com/github/aw
 These are Copilot **agent** definitions, not skills, so they became OpenCode
 agents rather than skills.
 
+`.opencode/agents/code-reviewer.md` and `.opencode/agents/qa.md` are **not**
+vendored — see "Locally authored" below.
+
 ### Mechanical conversions applied
 
 - **Frontmatter replaced.** Upstream uses `description`, `name`, `tools`, `model`.
@@ -49,17 +52,29 @@ agents rather than skills.
   path, so upstream names like `SE: Security` and `Expert React Frontend Engineer`
   would have been misleading. IDs are now `react-expert`, `api-architect`,
   `security-reviewer`, `architecture-reviewer`.
-- **`mode` set deliberately** — `subagent` for the two reviewers, `primary` for
-  `api-architect` (it is an interactive mentor that waits for "generate"), `all`
-  for `react-expert`.
+- **`mode` set deliberately** — `subagent` for the three reviewers and for `qa`,
+  `all` for `react-expert` and `api-architect`. `api-architect` was originally
+  `primary`; it moved to `all` so it can be both a design session and a
+  delegated consultant. Its prompt gained a matching subagent entry path.
 
 ### Behavioural changes
 
-- **Both reviewers are read-only.** `edit` is denied, so the upstream
+- **All reviewers are read-only.** `edit` is denied, so the upstream
   instruction to write reports to `docs/code-review/` and
   `docs/architecture/` was changed to return the report inline in the response.
-  `architecture-reviewer` keeps shell access (it may consult the web);
-  `security-reviewer` denies both edit and shell.
+  Both vendored reviewers additionally deny shell except four non-mutating git
+  verbs — `git diff`, `git status`, `git log`, `git show` — so they can read the
+  change under review without being able to mutate anything. A bare `git *`
+  wildcard was deliberately avoided: it would also grant `push` and `commit`.
+  `architecture-reviewer` previously inherited unrestricted shell while being
+  documented as read-only; that inconsistency is fixed. It loses the upstream
+  "consult the web" shell path as a result, which is acceptable for a reviewer
+  of local code.
+- **`security-reviewer` gained read access to the diff.** It previously denied
+  shell outright, so it could not run `git diff` and a caller had to paste the
+  diff into the prompt. The scoped git verbs above replace that blanket deny.
+  Shell is still not fully open, because an agent that reads untrusted repo
+  content with shell is a prompt-injection target.
 - **`Code Interpreter` instruction removed** from `api-architect`. That tool does
   not exist in OpenCode; the agent uses its normal file tools.
 
@@ -87,6 +102,20 @@ It takes precedence over the upstream prompt. Summary:
   feed clients in `apps/api/src/lib/` and route writes through the repository;
   told to propose new dependencies rather than assume them; and permitted to skip
   the three-layer split when the upstream is not genuinely flaky.
+- **`api-architect` — contract-first lifecycle (structural change).** The
+  upstream prompt jumps from a list of API aspects straight to "write working
+  code for ALL layers, NO TEMPLATES". That skips the contract and the plan,
+  which is where adherence to the specification is actually decided, and it
+  maximises the amount of unreviewed generated code in one shot. The override
+  now imposes five phases — **contract → plan → review gate → implement →
+  validate** — and redefines the upstream word "generate" as the entry to phase
+  4 (implement against the *approved* contract). The contract must state the
+  per-field policy for missing, renamed, and wrongly-typed upstream fields,
+  which is the highest-risk part of an MLS feed integration. Phase 5 requires
+  fixture-driven conformance tests asserting the normalized output satisfies
+  `packages/types` and the `ListingsTable` interface, including `source`.
+  A subagent entry path was added: a subagent cannot answer "say generate", so
+  without it a delegated call would stall or invent the contract silently.
 
 ---
 
@@ -122,6 +151,38 @@ Both skills ship guidance that is wrong for this repo, so the corrections are
 - **`typescript-magician`** — its step 1 is to run `tsc --noEmit`. Use
   `npm run typecheck` from the repo root, which dispatches to each workspace
   (`apps/api` typechecks via `tsconfig.test.json`).
+
+---
+
+## Locally authored — not vendored
+
+Written for this repo. No upstream, so they must **not** be added to the
+provenance table above or re-fetched on upgrade.
+
+| Path | What it is |
+|---|---|
+| `.opencode/agents/code-reviewer.md` | Correctness review of the working diff |
+| `.opencode/agents/qa.md` | Runs the gate, reports facts incl. skipped integration tests |
+| `.opencode/commands/review.md` | `/review` — diff summary + delegates to `code-reviewer` |
+| `.opencode/commands/qa.md` | `/qa` — delegates to `qa` |
+| `scripts/gate.sh` | Backpressure wrapper; shared by `npm run gate`, `qa`, and CI |
+| `.github/workflows/ci.yml` | The only hard gate |
+
+Design notes:
+
+- **The reviewers all share one scoped shell block** — deny everything, then
+  allow `git diff|status|log|show`. Uniform on purpose: the three review agents
+  differ in what they look *for*, not in what they are *allowed to touch*.
+- **`qa` is a pure verifier.** `edit` is denied outright. A verifier that can
+  edit is tempted to make a failing test pass; the main agent owns test
+  authorship.
+- **`qa` must report skipped tests.** `apps/api` integration tests self-skip via
+  `ctx.skip()` without `DATABASE_URL`, so "green" can mean "never ran". The
+  agent is required to say which claim it is making, and CI sets
+  `GATE_REQUIRE_DB=1` so the gate fails instead of skipping silently.
+
+These are not MIT-licensed third-party content, so the license section above
+does not apply to them.
 
 ---
 
