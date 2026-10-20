@@ -20,12 +20,11 @@ export interface ValidationFailure {
 export type ParseResult = ValidationSuccess | ValidationFailure;
 
 type RawValue =
-  | { kind: "absent" }
-  | { kind: "invalid" }
-  | { kind: "value"; value: string };
+  { kind: "absent" } | { kind: "invalid" } | { kind: "value"; value: string };
 
 /** Outcome of reading one field: the normalized value or the first failure. */
-type Read<T> = { ok: true; value: T } | { ok: false; failure: ValidationFailure };
+type Read<T> =
+  { ok: true; value: T } | { ok: false; failure: ValidationFailure };
 
 /**
  * Normalizes a raw query value. Empty/whitespace-only strings count as absent
@@ -39,7 +38,9 @@ function readRaw(value: unknown): RawValue {
   }
   if (typeof value === "string") {
     const trimmed = value.trim();
-    return trimmed === "" ? { kind: "absent" } : { kind: "value", value: trimmed };
+    return trimmed === ""
+      ? { kind: "absent" }
+      : { kind: "value", value: trimmed };
   }
   return { kind: "invalid" };
 }
@@ -54,7 +55,10 @@ function readString(
 ): Read<string | undefined> {
   const raw = readRaw(query[field]);
   if (raw.kind === "invalid") {
-    return { ok: false, failure: failure(field, `${field} must be a single value`) };
+    return {
+      ok: false,
+      failure: failure(field, `${field} must be a single value`),
+    };
   }
   return { ok: true, value: raw.kind === "value" ? raw.value : undefined };
 }
@@ -66,7 +70,10 @@ function readNumber(
 ): Read<number | undefined> {
   const raw = readRaw(query[field]);
   if (raw.kind === "invalid") {
-    return { ok: false, failure: failure(field, `${field} must be a single value`) };
+    return {
+      ok: false,
+      failure: failure(field, `${field} must be a single value`),
+    };
   }
   if (raw.kind === "absent") {
     return { ok: true, value: undefined };
@@ -77,13 +84,22 @@ function readNumber(
     return { ok: false, failure: failure(field, `${field} must be a number`) };
   }
   if (opts.integer && !Number.isInteger(value)) {
-    return { ok: false, failure: failure(field, `${field} must be an integer`) };
+    return {
+      ok: false,
+      failure: failure(field, `${field} must be an integer`),
+    };
   }
   if (opts.min !== undefined && value < opts.min) {
-    return { ok: false, failure: failure(field, `${field} must be >= ${opts.min}`) };
+    return {
+      ok: false,
+      failure: failure(field, `${field} must be >= ${opts.min}`),
+    };
   }
   if (opts.max !== undefined && value > opts.max) {
-    return { ok: false, failure: failure(field, `${field} must be <= ${opts.max}`) };
+    return {
+      ok: false,
+      failure: failure(field, `${field} must be <= ${opts.max}`),
+    };
   }
   return { ok: true, value };
 }
@@ -101,7 +117,10 @@ export function parseSearchParams(query: Record<string, unknown>): ParseResult {
   if (!minPrice.ok) return minPrice.failure;
   const maxPrice = readNumber(query, "maxPrice", { min: 0 });
   if (!maxPrice.ok) return maxPrice.failure;
-  const minBedrooms = readNumber(query, "minBedrooms", { integer: true, min: 0 });
+  const minBedrooms = readNumber(query, "minBedrooms", {
+    integer: true,
+    min: 0,
+  });
   if (!minBedrooms.ok) return minBedrooms.failure;
   const targetBudget = readNumber(query, "targetBudget", { min: 0 });
   if (!targetBudget.ok) return targetBudget.failure;
@@ -136,7 +155,10 @@ export function parseSearchParams(query: Record<string, unknown>): ParseResult {
     maxPrice.value !== undefined &&
     minPrice.value > maxPrice.value
   ) {
-    return failure("minPrice", "minPrice must be less than or equal to maxPrice");
+    return failure(
+      "minPrice",
+      "minPrice must be less than or equal to maxPrice",
+    );
   }
 
   return {

@@ -52,12 +52,18 @@ describe("parseSearchParams", () => {
   });
 
   it("allows minPrice equal to maxPrice", () => {
-    const result = parseSearchParams({ minPrice: "500000", maxPrice: "500000" });
+    const result = parseSearchParams({
+      minPrice: "500000",
+      maxPrice: "500000",
+    });
     expect(result.ok).toBe(true);
   });
 
   it("rejects minPrice greater than maxPrice", () => {
-    const result = parseSearchParams({ minPrice: "600000", maxPrice: "400000" });
+    const result = parseSearchParams({
+      minPrice: "600000",
+      maxPrice: "400000",
+    });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.field).toBe("minPrice");

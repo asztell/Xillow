@@ -76,7 +76,10 @@ describe("App", () => {
     handleListings(() =>
       page({
         total: 2,
-        results: [listing({ id: "A1" }), listing({ id: "A2", address: "456 Oak Ave" })],
+        results: [
+          listing({ id: "A1" }),
+          listing({ id: "A2", address: "456 Oak Ave" }),
+        ],
       }),
     );
     renderApp();
@@ -97,7 +100,9 @@ describe("App", () => {
     await userEvent.click(toDark);
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
 
-    const toLight = screen.getByRole("button", { name: /switch to light mode/i });
+    const toLight = screen.getByRole("button", {
+      name: /switch to light mode/i,
+    });
     await userEvent.click(toLight);
     expect(document.documentElement).toHaveAttribute("data-theme", "light");
   });
@@ -106,7 +111,9 @@ describe("App", () => {
     handleListings(() => page({ total: 0, totalPages: 0, results: [] }));
     renderApp();
 
-    expect(await screen.findByText(/no listings match your search/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no listings match your search/i),
+    ).toBeInTheDocument();
   });
 
   it("surfaces a server validation error and recovers on retry", async () => {
@@ -149,7 +156,9 @@ describe("App", () => {
             totalPages: 2,
             hasNext: false,
             hasPrev: true,
-            results: [listing({ id: "A3", address: "789 Pine Rd", score: 0.42 })],
+            results: [
+              listing({ id: "A3", address: "789 Pine Rd", score: 0.42 }),
+            ],
           })
         : page({
             page: 1,
@@ -173,12 +182,16 @@ describe("App", () => {
   });
 
   it("applies filters from the form and resets to page 1", async () => {
-    const requests = handleListings((requestedPage) => page({ page: requestedPage }));
+    const requests = handleListings((requestedPage) =>
+      page({ page: requestedPage }),
+    );
     renderApp();
     await screen.findByText("123 Main St, Apt 4B");
 
     await userEvent.type(screen.getByLabelText(/^city$/i), "Fairfax");
-    await userEvent.click(screen.getByRole("button", { name: /^apply filters$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^apply filters$/i }),
+    );
 
     await waitFor(() =>
       expect(requests.at(-1)?.searchParams.get("city")).toBe("Fairfax"),
@@ -194,7 +207,9 @@ describe("App", () => {
 
     await userEvent.type(screen.getByLabelText(/min price/i), "600000");
     await userEvent.type(screen.getByLabelText(/max price/i), "400000");
-    await userEvent.click(screen.getByRole("button", { name: /^apply filters$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^apply filters$/i }),
+    );
 
     expect(await screen.findByText(/less than or equal/i)).toBeInTheDocument();
     expect(requests).toHaveLength(requestsBefore);
@@ -268,7 +283,9 @@ describe("App", () => {
   });
 
   it("resets every filter (but keeps results per page) from the bottom action", async () => {
-    const requests = handleListings((requestedPage) => page({ page: requestedPage }));
+    const requests = handleListings((requestedPage) =>
+      page({ page: requestedPage }),
+    );
     renderApp({
       initialEntries: ["/?city=Fairfax&minBedrooms=2&page=1&pageSize=25"],
     });
@@ -349,7 +366,9 @@ describe("App", () => {
   });
 
   it("applies a new sort, updating the URL and resetting to page 1", async () => {
-    const requests = handleListings((requestedPage) => page({ page: requestedPage }));
+    const requests = handleListings((requestedPage) =>
+      page({ page: requestedPage }),
+    );
     renderApp({ initialEntries: ["/?page=2"] });
     await screen.findByText("123 Main St, Apt 4B");
 
@@ -436,7 +455,9 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("button", { name: /next photo/i }));
     expect(screen.getByAltText(/photo 2 of 3/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /previous photo/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /previous photo/i }),
+    );
     expect(screen.getByAltText(/photo 1 of 3/i)).toBeInTheDocument();
 
     // Wraps around from the last photo back to the first.
@@ -477,6 +498,9 @@ describe("App", () => {
     fireEvent.error(img);
     expect(img).toHaveAttribute("src", PLACEHOLDER_IMAGE_URL);
     fireEvent.error(img);
-    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
+    expect(img).toHaveAttribute(
+      "src",
+      expect.stringContaining("data:image/svg+xml"),
+    );
   });
 });

@@ -19,6 +19,9 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "oxlint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "gate": "bash scripts/gate.sh",
     "docker:up": "docker compose up --build",
     "docker:up:detached": "docker compose up --build -d",
@@ -28,6 +31,8 @@
     "backfill:dup-key": "dotenv -e .env.local -e .env -- tsx apps/api/src/backfill-dup-key.ts"
   },
   "devDependencies": {
-    "concurrently": "^10.0.6"
+    "concurrently": "^10.0.6",
+    "oxlint": "^1.89.0",
+    "prettier": "^3.9.10"
   }
 }

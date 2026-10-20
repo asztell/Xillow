@@ -12,7 +12,12 @@ interface RenderAppOptions {
 export function renderApp({ initialEntries = ["/"] }: RenderAppOptions = {}) {
   const client = new QueryClient({
     defaultOptions: {
-      queries: { retry: false, staleTime: 0, gcTime: 0, refetchOnWindowFocus: false },
+      queries: {
+        retry: false,
+        staleTime: 0,
+        gcTime: 0,
+        refetchOnWindowFocus: false,
+      },
     },
   });
 

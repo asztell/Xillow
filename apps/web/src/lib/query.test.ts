@@ -35,7 +35,9 @@ describe("parseListingsQuery", () => {
 
   it("drops invalid values rather than throwing", () => {
     const query = parseListingsQuery(
-      new URLSearchParams("minPrice=cheap&page=0&pageSize=9999&minBedrooms=1.5"),
+      new URLSearchParams(
+        "minPrice=cheap&page=0&pageSize=9999&minBedrooms=1.5",
+      ),
     );
     expect(query.minPrice).toBeUndefined();
     expect(query.minBedrooms).toBeUndefined();
@@ -44,7 +46,9 @@ describe("parseListingsQuery", () => {
   });
 
   it("treats blank values as absent", () => {
-    const query = parseListingsQuery(new URLSearchParams("city=%20%20&keyword="));
+    const query = parseListingsQuery(
+      new URLSearchParams("city=%20%20&keyword="),
+    );
     expect(query.city).toBeUndefined();
     expect(query.keyword).toBeUndefined();
   });
@@ -85,7 +89,9 @@ describe("toSearchParams", () => {
   it("omits the recommended (default) sort and includes non-default sorts", () => {
     expect(toSearchParams({ page: 1, pageSize: 10 }).has("sort")).toBe(false);
     expect(
-      toSearchParams({ page: 1, pageSize: 10, sort: "recommended" }).has("sort"),
+      toSearchParams({ page: 1, pageSize: 10, sort: "recommended" }).has(
+        "sort",
+      ),
     ).toBe(false);
     expect(
       toSearchParams({ page: 1, pageSize: 10, sort: "price_asc" }).get("sort"),

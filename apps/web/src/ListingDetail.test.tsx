@@ -196,7 +196,9 @@ describe("listing detail overlay", () => {
     handleDetail(() => detail());
 
     renderApp({ initialEntries: ["/?listingSource=MLS_A&listingId=A1"] });
-    const dialog = await screen.findByRole("dialog", { name: new RegExp(ADDRESS) });
+    const dialog = await screen.findByRole("dialog", {
+      name: new RegExp(ADDRESS),
+    });
 
     // `cancel` is the event a native <dialog> fires on Escape.
     fireEvent(dialog, new Event("cancel", { cancelable: true }));
@@ -211,7 +213,9 @@ describe("listing detail overlay", () => {
     handleDetail(() => detail());
 
     renderApp({ initialEntries: ["/?listingSource=MLS_A&listingId=A1"] });
-    const dialog = await screen.findByRole("dialog", { name: new RegExp(ADDRESS) });
+    const dialog = await screen.findByRole("dialog", {
+      name: new RegExp(ADDRESS),
+    });
 
     await userEvent.click(
       within(dialog).getByRole("button", { name: /close listing details/i }),
@@ -230,7 +234,9 @@ describe("listing detail overlay", () => {
     const dialog = await openFromCard();
 
     expect(within(dialog).getByText(/listed on MLS_A/i)).toBeInTheDocument();
-    expect(within(dialog).queryByText("Current listing")).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByText("Current listing"),
+    ).not.toBeInTheDocument();
   });
 
   it("points an older sibling at the newer listing and can switch to it", async () => {
@@ -247,7 +253,9 @@ describe("listing detail overlay", () => {
     );
 
     renderApp({ initialEntries: ["/?listingSource=MLS_A&listingId=A1"] });
-    const dialog = await screen.findByRole("dialog", { name: new RegExp(ADDRESS) });
+    const dialog = await screen.findByRole("dialog", {
+      name: new RegExp(ADDRESS),
+    });
 
     expect(within(dialog).getByText(/newer listing/i)).toBeInTheDocument();
 
@@ -265,9 +273,13 @@ describe("listing detail overlay", () => {
     handleDetail(() => 404);
 
     renderApp({ initialEntries: ["/?listingSource=MLS_A&listingId=NOPE"] });
-    const dialog = await screen.findByRole("dialog", { name: /listing details/i });
+    const dialog = await screen.findByRole("dialog", {
+      name: /listing details/i,
+    });
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent(/not found/i);
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      /not found/i,
+    );
   });
 });
 
@@ -323,7 +335,9 @@ describe("detail photo gallery", () => {
     );
 
     await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: /of 3/ })).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole("dialog", { name: /of 3/ }),
+      ).not.toBeInTheDocument(),
     );
     // The detail overlay is still there.
     expect(

@@ -81,11 +81,16 @@ function canonical(listing: SampleListing): string {
  * upsert simply keeps the last occurrence - but an accidental repeat (or a
  * conflicting repeat) is worth surfacing instead of overwriting in silence.
  */
-export function findDuplicateKeys(listings: SampleListing[]): DuplicateKeyWarning[] {
+export function findDuplicateKeys(
+  listings: SampleListing[],
+): DuplicateKeyWarning[] {
   // Only the first occurrence of each key is kept, together with its
   // canonical payload, so repeats are serialized once instead of re-serializing
   // the first record on every occurrence.
-  const firstSeen = new Map<string, { id: string; source: string; payload: string }>();
+  const firstSeen = new Map<
+    string,
+    { id: string; source: string; payload: string }
+  >();
   const counts = new Map<string, number>();
   const conflicting = new Set<string>();
 
@@ -114,7 +119,9 @@ export function findDuplicateKeys(listings: SampleListing[]): DuplicateKeyWarnin
     }))
     .filter((warning) => warning.count > 1)
     .sort((a, b) =>
-      a.id === b.id ? a.source.localeCompare(b.source) : a.id.localeCompare(b.id),
+      a.id === b.id
+        ? a.source.localeCompare(b.source)
+        : a.id.localeCompare(b.id),
     );
 }
 

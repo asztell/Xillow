@@ -86,10 +86,13 @@ describe("recencyScore", () => {
 
 describe("scoreListing", () => {
   it("combines budget and recency with 60/40 weights", () => {
-    const scored = scoreListing(makeListing({ listedDate: NOW.toISOString() }), {
-      targetBudget: 450000,
-      now: NOW,
-    });
+    const scored = scoreListing(
+      makeListing({ listedDate: NOW.toISOString() }),
+      {
+        targetBudget: 450000,
+        now: NOW,
+      },
+    );
     // budget = 1.0, recency = 1.0 -> weighted average = 1.0
     expect(scored.score).toBeCloseTo(1, 5);
   });
@@ -111,7 +114,10 @@ describe("scoreListing", () => {
 
   it("keeps the score within [0, 1]", () => {
     const scored = scoreListing(
-      makeListing({ price: 10_000_000, listedDate: "2000-01-01T00:00:00.000Z" }),
+      makeListing({
+        price: 10_000_000,
+        listedDate: "2000-01-01T00:00:00.000Z",
+      }),
       { targetBudget: 100000, now: NOW },
     );
     expect(scored.score).toBeGreaterThanOrEqual(0);

@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   gate:
-    name: typecheck + tests
+    name: lint + format + typecheck + tests
     runs-on: ubuntu-latest
 
     services:
