@@ -5,6 +5,23 @@ permissions:
   - action: edit
     resource: "*"
     effect: deny
+  # Was: unrestricted shell (inherited). The agent is documented as read-only,
+  # so scope it to non-mutating git verbs like the other reviewers.
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "git diff*"
+    effect: allow
+  - action: shell
+    resource: "git status*"
+    effect: allow
+  - action: shell
+    resource: "git log*"
+    effect: allow
+  - action: shell
+    resource: "git show*"
+    effect: allow
 ---
 
 # Xillow scope override — READ FIRST

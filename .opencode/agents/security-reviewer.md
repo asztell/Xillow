@@ -8,6 +8,21 @@ permissions:
   - action: shell
     resource: "*"
     effect: deny
+  # Read-only git verbs, so the reviewer can see the change under review.
+  # Deliberately NOT a bare `git *` — that would also grant push/commit.
+  # Deliberately no `npm` — a reviewer must not run the suite.
+  - action: shell
+    resource: "git diff*"
+    effect: allow
+  - action: shell
+    resource: "git status*"
+    effect: allow
+  - action: shell
+    resource: "git log*"
+    effect: allow
+  - action: shell
+    resource: "git show*"
+    effect: allow
 ---
 
 # Xillow scope override — READ FIRST
