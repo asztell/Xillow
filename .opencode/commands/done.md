@@ -20,8 +20,8 @@ State which claim you are making, as `/qa` does:
 
 | Claim | Meaning |
 |---|---|
-| typecheck + full suite green, database present | integration paths really ran |
-| typecheck + suite green, no database | unit/route coverage only; **integration unverified** |
+| gate green, database present | lint, format, types, tests, and integration paths really ran |
+| gate green, no database | unit/route coverage only; **integration unverified** |
 | failing | paste the real assertion |
 
 ## 2. Review — route, do not fan out
@@ -35,9 +35,16 @@ State which claim you are making, as `/qa` does:
 - `apps/web/src/api/client.ts`, `src/lib/storage.ts`
 - any `dangerouslySetInnerHTML`, env/secret handling, or a new route
 
-**Add `architecture-reviewer`** only if the diff adds a dependency, changes the
-schema, or moves a service boundary. Otherwise skip it — three reviewers on
-every diff triples the cost for a third of the signal.
+**Add `web-reviewer`** if the diff touches `apps/web/src/components/`,
+`src/hooks/`, `src/index.css`, or `src/routes.tsx`. It covers what jsdom cannot:
+overlay focus, keyboard paths, query-key discipline, effect cleanup, and
+layout/CSS regressions. Do not ask it to re-check logic `code-reviewer` already
+owns.
+
+**There is no architecture reviewer.** If the diff adds a dependency, changes
+`apps/api/schema.sql`, or changes `packages/types`, stop and ask the human
+before proceeding. `code-reviewer` checks the blast radius; the decision is not
+an agent's.
 
 Give each reviewer: the diff (`git diff HEAD`), the contract path if one exists
 (`.opencode/contracts/<slug>.md`), and — in round 2 — the findings file from

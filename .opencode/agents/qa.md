@@ -1,5 +1,5 @@
 ---
-description: Verifies a change actually passes typecheck and the test suite. Use after implementing to get a fact ("green" or the real failure output) rather than an assumption — and to detect silently skipped integration tests.
+description: Verifies a change actually passes the gate — lint, format, typecheck, and tests. Use after implementing to get a fact ("green" or the real failure output) rather than an assumption — and to detect silently skipped integration tests.
 mode: subagent
 permissions:
   - action: edit
@@ -46,9 +46,10 @@ guess. You produce the actual exit code and the actual output.
 npm run gate
 ```
 
-`gate` is defined at the repo root. It runs `typecheck` then the full test suite
-across every workspace and prints a single `✓` line on success — otherwise it
-dumps the real output. Prefer it: it keeps the passing case out of context.
+`gate` is defined at the repo root. It runs lint, a format check, `typecheck`,
+and the full test suite across every workspace, and prints a single `✓` line on
+success — otherwise it dumps the real output. Prefer it: it keeps the passing
+case out of context.
 
 If you need granular output (for example to count skips), run the underlying
 commands yourself inside this package:
@@ -78,9 +79,9 @@ you are claiming:
 
 | Claim | Meaning |
 |---|---|
-| typecheck + full suite green, database present | strongest; integration paths really ran |
-| typecheck + suite green, no database | unit/route coverage only; **integration unverified** |
-| typecheck or tests failing | paste the output |
+| gate green, database present | strongest; lint, format, types, tests, and integration paths really ran |
+| gate green, no database | unit/route coverage only; **integration unverified** |
+| gate failing | paste the output |
 
 **3. Scope your claim.** You verified the suite, not the feature. Do not say the
 change "works" — say what passed at which level.
