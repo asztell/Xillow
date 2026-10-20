@@ -661,8 +661,8 @@ button:disabled {
 }
 
 .detail-close:hover {
-  background: #ffffff;
-  color: var(--accent-hover);
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 .detail-main {
@@ -784,6 +784,8 @@ button:disabled {
 .gallery-thumb {
   padding: 0;
   border: none;
+  /* Square tiles; only the modal's own radius may clip an outer corner. */
+  border-radius: 0;
   background: none;
   cursor: zoom-in;
   overflow: hidden;
@@ -793,6 +795,7 @@ button:disabled {
   display: block;
   width: 100%;
   height: 100%;
+  border-radius: 0;
   object-fit: cover;
 }
 
@@ -811,7 +814,9 @@ button:disabled {
 }
 
 .see-all-photos:hover {
-  color: var(--accent-hover);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 /* --- Photo lightbox --- */
