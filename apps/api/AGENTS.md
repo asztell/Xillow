@@ -17,22 +17,8 @@ npm run build -w @xillow/api      # tsc
 
 ## Structure
 
-```text
-src/
-├── index.ts            # entrypoint: loads .env, builds pool/db/app, listens
-├── app.ts              # createApp(repo) — Express wiring, takes repo by DI
-├── db.ts               # Kysely Database types + createPool / createDb factories
-├── env.ts              # dotenv, repo-root .env (three levels up from src|dist)
-├── types.ts
-├── routes/listings.ts  # router factory: createListingsRouter(repo)
-├── repositories/       # listingRepository.ts — all SQL lives here
-├── lib/                # pure logic: search, scoring, dedupe, sorting, validation
-└── seed.ts, backfill-dup-key.ts
-scripts/seed-photos.mjs
-schema.sql
-```
-
-Three rules hold the shape together:
+Three invariants hold the shape together. They are not inferable from reading
+the code, so preserve them:
 
 1. **`createApp(repo)` takes the repository as a dependency.** Tests build the
    app with a fake repo. Preserve that signature.

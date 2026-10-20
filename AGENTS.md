@@ -2,24 +2,13 @@
 
 Listing search across multiple MLS feeds: an Express + Postgres API and a React SPA.
 
-Read this before changing anything. `README.md` is the full reference (~27KB) —
-consult it for API reference, data model, and trade-off rationale rather than
-duplicating it here.
-
-## Layout
-
-npm workspaces: `apps/api`, `apps/web`, `packages/types`. Always run npm scripts
-from the repo root.
-
-| Path | What it is | Conventions |
-|---|---|---|
-| `apps/api` | Express 5 + Kysely + Postgres, CommonJS, Node >= 20 | [`apps/api/AGENTS.md`](apps/api/AGENTS.md) |
-| `apps/web` | Vite + React 19 SPA, react-router, react-query | [`apps/web/AGENTS.md`](apps/web/AGENTS.md) |
-| `packages/types` | Shared request/response contracts | [`packages/types/AGENTS.md`](packages/types/AGENTS.md) |
+`README.md` is the full reference (~27KB) — consult it for API reference, data
+model, and trade-off rationale rather than duplicating it here.
 
 ## Commands
 
 ```bash
+npm run gate                            # typecheck + full suite; one line on success
 npm run typecheck                       # all workspaces
 npm test                                # all workspaces
 npm run build
@@ -35,8 +24,14 @@ npm run docker:up                       # recommended full stack
 npm run docker:reset                    # down -v, destroys the volume
 ```
 
-TypeScript is `^7.0.2` in every workspace. Run `npm run typecheck` from the
-root rather than invoking `tsc` per package.
+**Run npm scripts from the repo root.** They dispatch to the workspaces with
+`-w`, and `typecheck` is meant to run across all of them at once. TypeScript is
+`^7.0.2`; do not invoke `tsc` per package.
+
+`npm run gate` swallows passing output and prints only a `✓` or the real
+failure. Prefer it over `npm test` — a passing suite in this repo is ~180 lines
+of noise. Set `GATE_REQUIRE_DB=1` to fail when the api integration tests are
+skipped, which is how CI asserts they really ran.
 
 ## Ground rules
 
@@ -53,39 +48,17 @@ root rather than invoking `tsc` per package.
 - Prefer small pure functions in `apps/api/src/lib/`. Existing modules there are
   unit-tested and dependency-free; keep new ones that way.
 
-## Available skills
+## Where the rest lives
 
-These are vendored into the repo and load on demand. Load one with the `skill`
-tool by ID, or reference it directly as `@<id>`.
+- **Per-package rules:** `apps/api/AGENTS.md`, `apps/web/AGENTS.md`,
+  `packages/types/AGENTS.md`. Read the one for the code you are touching.
+- **Agents, skills, commands:** `.opencode/`. These are auto-discovered and their
+  descriptions say when to use them, so they are deliberately not listed here.
+  Vendored agents carry a **"Xillow scope override"** section at the top that
+  outranks their upstream prompt — those upstream prompts assume RSC, microservices,
+  and a missing-auth local API, none of which apply.
+- **Provenance and every local adaptation:** `.opencode/SOURCES.md`.
 
-- **`node`** — Node.js/TypeScript backend patterns: error handling, graceful
-  shutdown, streams, caching, profiling, logging, env config. Rule files under
-  `.opencode/skills/node/rules/`.
-  **Read the override in `apps/api/AGENTS.md` first** — this project is Node 20
-  with `tsx` and vitest, so the skill's type-stripping and `node:test` guidance
-  does not apply.
-- **`typescript-magician`** — advanced generics, `infer`, conditional and mapped
-  types, branded types, type narrowing, and diagnosing `tsc` errors.
-
-## Available agents
-
-Invoke via the `subagent` tool, or select one as your primary agent.
-
-| Agent | Mode | Use for |
-|---|---|---|
-| `react-expert` | all | Component work in `apps/web` (React 19, hooks, a11y, perf) |
-| `api-architect` | primary | Wiring `apps/api` to a new upstream feed; REST client design |
-| `security-reviewer` | subagent, read-only | OWASP/Zero Trust review before shipping `apps/api` or `apps/web` |
-| `architecture-reviewer` | subagent, read-only | Structural decisions, dependencies, scaling questions |
-
-Each vendored agent carries a **"Xillow scope override"** section at the top of
-its file that takes precedence over the upstream prompt. Read it before following
-the agent's generic advice — several upstream sections do not apply here (RSC in
-a Vite SPA, microservices in a two-service monorepo, missing auth in an
-intentionally open local API).
-
-## Upstream sources
-
-Vendored MIT-licensed, see `.opencode/SOURCES.md` for provenance and the list of
-adaptations made. Update vendored content by re-fetching upstream rather than
-editing the rule files in place.
+CI (`.github/workflows/ci.yml`) is the only hard gate. Everything in this file
+and in `.opencode/` is advisory steering — it cannot block a bad change the way
+a failing test can.
