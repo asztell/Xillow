@@ -47,6 +47,16 @@ The gate runs them cheapest-first: lint, format, typecheck, tests.
 
 ## Ground rules
 
+- **Never commit without explicit confirmation, every time.** Before running
+  `git commit`, show:
+  1. every file in the commit, grouped as added / modified / deleted;
+  2. the exact commit message, in full.
+
+  Then wait for the user to say yes. The permission layer also gates
+  `git commit` and `git push` with `ask` (`.opencode/opencode.json`); choose
+  **once**, not **always**, to keep the confirmation per-commit. A previous
+  approval is not approval for the next commit, and never commit files the user
+  did not ask to include.
 - **Never edit `README.md` unless asked.** It is the spec of record for this project.
 - **Never put a secret in `VITE_*`.** Vite inlines those into the public bundle.
   Only `VITE_API_BASE` is expected; it is empty in dev because the browser calls
