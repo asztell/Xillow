@@ -8,7 +8,11 @@ import { API_BASE, fetchListingDetail } from "../api/client";
  * straight away; the staleTime avoids refetching the same listing while the
  * modal is open and closed again.
  */
-export function useListingDetail(source: string, id: string, base: string = API_BASE) {
+export function useListingDetail(
+  source: string,
+  id: string,
+  base: string = API_BASE,
+) {
   return useQuery({
     queryKey: ["listing", base, source, id],
     queryFn: ({ signal }) => fetchListingDetail(source, id, signal, base),
