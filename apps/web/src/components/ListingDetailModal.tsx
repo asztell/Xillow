@@ -12,6 +12,7 @@ const TITLE_ID = "listing-detail-title";
 interface ListingDetailModalProps {
   source: string;
   id: string;
+  apiBase?: string;
   /**
    * Switches the open modal to a different listing (e.g. the newer sibling).
    * The parent replaces the URL so closing still returns to the grid.
@@ -157,10 +158,11 @@ function LoadedDetail({
 export function ListingDetailModal({
   source,
   id,
+  apiBase,
   onSelect,
   onClose,
 }: ListingDetailModalProps) {
-  const detail = useListingDetail(source, id);
+  const detail = useListingDetail(source, id, apiBase);
 
   return (
     <Modal
