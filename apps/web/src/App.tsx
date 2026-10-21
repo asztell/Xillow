@@ -1,7 +1,8 @@
 import type { SortKey } from "@xillow/types";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { ListingApiError } from "./api/client";
+import { API_BASE, ListingApiError } from "./api/client";
+import { BackendToggle, type Backend } from "./components/BackendToggle";
 import { ListingDetailModal } from "./components/ListingDetailModal";
 import { Results, type ResultsError } from "./components/Results";
 import { SearchForm } from "./components/SearchForm";
@@ -25,7 +26,22 @@ function toResultsError(error: Error | null): ResultsError | null {
 
 export default function App() {
   const [query, setQuery] = useListingQuery();
-  const listings = useListings(query);
+
+  const [backend, setBackend] = useState<Backend>(() => {
+    if (typeof window === "undefined") return "node";
+    return (window.localStorage.getItem("xillow-backend") as Backend) || "node";
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem("xillow-backend", backend);
+  }, [backend]);
+
+  const apiBase =
+    backend === "go"
+      ? `${window.location.protocol}//${window.location.hostname}:3002`
+      : API_BASE;
+
+  const listings = useListings(query, apiBase);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -102,10 +118,15 @@ export default function App() {
         <ListingDetailModal
           source={detail.source}
           id={detail.id}
+          apiBase={apiBase}
           onSelect={openDetail}
           onClose={closeDetail}
         />
       )}
+
+      <footer className="app-footer">
+        <BackendToggle value={backend} onChange={setBackend} />
+      </footer>
     </div>
   );
 }

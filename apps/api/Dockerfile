@@ -59,5 +59,5 @@ COPY apps/api/sample_listings.json apps/api/sample_listings.json
 # Drop privileges to the unprivileged `node` user that ships with the image.
 USER node
 
-EXPOSE 3000
+EXPOSE 3001
 CMD ["node", "apps/api/dist/index.js"]
