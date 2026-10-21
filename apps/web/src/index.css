@@ -459,8 +459,11 @@ button:disabled {
   width: 1.8rem;
   height: 1.8rem;
   padding: 0;
+  /* Optical centering: lift the chevron 1px inside the round container. */
+  padding-bottom: 2px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
+  /* 40% lower opacity than the original 90% background. */
+  background: rgba(255, 255, 255, 0.54);
   color: #1f2933;
   font-size: 1.15rem;
   line-height: 1;
@@ -651,6 +654,8 @@ button:disabled {
   width: 2rem;
   height: 2rem;
   padding: 0;
+  /* Optical centering: lift the × 1.5px inside the round control. */
+  padding-bottom: 3px;
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
@@ -861,6 +866,8 @@ button:disabled {
 .lightbox-close {
   width: 2.2rem;
   height: 2.2rem;
+  /* Optical centering: lift the × 2px inside the round control. */
+  padding-bottom: 4px;
   font-size: 1.4rem;
 }
 
@@ -869,6 +876,8 @@ button:disabled {
   width: 2.6rem;
   height: 2.6rem;
   background: rgba(255, 255, 255, 0.22);
+  /* Optical centering: lift the chevron 2.5px inside the round container. */
+  padding-bottom: 5px;
   font-size: 1.6rem;
 }
 
@@ -909,9 +918,11 @@ button:disabled {
 
 .lightbox-img {
   display: block;
-  /* Definite height so the row underneath can inherit the rendered width. */
-  height: calc(100vh - 13rem);
+  /* Cap to the space left under the header and above the filmstrip, restoring
+     the pre-filmstrip photo size instead of reserving extra empty height. */
+  max-height: calc(100vh - 9.5rem);
   width: auto;
+  height: auto;
   max-width: 100%;
   object-fit: contain;
   border-radius: 4px;
@@ -1126,7 +1137,7 @@ button:disabled {
   .lightbox-img {
     height: auto;
     width: 100%;
-    max-height: calc(100vh - 11rem);
+    max-height: calc(100vh - 8.5rem);
   }
 
   .lightbox-thumb {
